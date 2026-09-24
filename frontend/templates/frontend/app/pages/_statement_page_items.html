@@ -1,0 +1,17 @@
+{% load frontend_format %}
+{% for it in items %}
+  <li class="hs-item">
+    <span class="hs-icon is-{{ it.kind }}">{% if it.kind == "withdraw" %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>{% elif it.kind == "deposit" %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>{% else %}{{ it.icon|safe }}{% endif %}</span>
+    <div class="hs-text">
+      <p class="hs-item-title">{{ it.page_title }}</p>
+      <p class="hs-item-date">{{ it.created_at|date:"d/m/Y H:i" }}</p>
+      {% if it.page_tag %}<span class="hs-tag is-{{ it.kind }}">{{ it.page_tag }}</span>{% endif %}
+    </div>
+    <div class="hs-right">
+      <p class="hs-amount{% if it.amount < 0 %} is-neg{% endif %}">{% if it.amount < 0 %}- {{ it.amount|brl|slice:"1:" }}{% else %}+ {{ it.amount|brl }}{% endif %}</p>
+      <p class="hs-status is-{{ it.status_tone }}">{{ it.page_status }}</p>
+    </div>
+  </li>
+{% empty %}
+  {% if first_page %}<li class="st-empty">Nenhuma movimentação por aqui ainda.</li>{% endif %}
+{% endfor %}

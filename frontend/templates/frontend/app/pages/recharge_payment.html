@@ -1,0 +1,65 @@
+{% load frontend_format %}
+{# Pagamento Pix (/recharge/<id>) — fragmento trocado dentro do #appView. Lógica em deposit.js. #}
+<section class="app-page dp dp-pay" data-page="deposit-payment" aria-labelledby="page-title-payment"
+         data-payment data-status-url="{% url 'frontend:action_deposit_status' charge.id %}"
+         data-expires="{{ charge.expires_iso }}" data-status="{{ charge.status }}">
+  <h1 id="page-title-payment" class="visually-hidden">Pagamento Pix</h1>
+
+  <div class="dp-pay-top">
+    <a href="{% url 'frontend:deposit' %}" class="dp-back" data-spa-link data-tab="deposit">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+      Alterar valor
+    </a>
+    <span class="dp-homolog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>Pix 24/7 homologado</span>
+  </div>
+
+  <div class="wd-card dp-pay-card">
+    <div class="dp-pay-head">
+      <span class="dp-pay-logo" aria-hidden="true">Pix</span>
+      <div class="dp-pay-head-text">
+        <h2>Pagamento Pix</h2>
+        <p>Efetue a transferência para validação automática</p>
+      </div>
+      <span class="dp-timer" data-timer aria-live="off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span data-timer-text>Carregando...</span></span>
+    </div>
+
+    <div class="dp-pay-amount">
+      <div>
+        <p class="wd-pix-label">Valor a depositar</p>
+        <p class="dp-pay-value">{{ charge.amount|brl }}</p>
+      </div>
+      <a href="{% url 'frontend:deposit' %}" class="dp-pay-change" data-spa-link data-tab="deposit">Alterar valor</a>
+    </div>
+
+    <div class="dp-qr">
+      {% if charge.qr_src %}<img src="{{ charge.qr_src }}" alt="QR Code Pix de {{ charge.amount|brl }}" width="220" height="220">{% endif %}
+      <p><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>Escaneie com o aplicativo do seu banco</p>
+    </div>
+
+    <p class="wd-label dp-code-label" id="pixCodeLabel">Chave Pix copia e cola</p>
+    <p class="dp-code" data-pix-code aria-labelledby="pixCodeLabel">{{ charge.pix_code }}</p>
+    <button type="button" class="dp-copy" data-copy-pix>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+      <span data-copy-label>Copiar Código Pix Copia e Cola</span>
+    </button>
+    <button type="button" class="dp-paid" data-confirm-paid>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+      Já fiz o Pix (Confirmar Pagamento)
+    </button>
+    <p class="dp-pay-status" data-pay-status aria-live="polite"><span class="dp-spinner" aria-hidden="true"></span><span data-pay-status-text>Aguardando liquidação bancária...</span></p>
+
+    <div class="dp-howto">
+      <p class="dp-howto-title">Como pagar com Pix copia e cola:</p>
+      <ol>
+        <li><span>1</span>Abra o app do seu banco e acesse a área <strong>Pix</strong></li>
+        <li><span>2</span>Escolha a opção <strong>Pix Copia e Cola</strong></li>
+        <li><span>3</span>Cole o código copiado acima e confirme o pagamento</li>
+      </ol>
+    </div>
+    <p class="dp-trust">
+      <span>🔒 Criptografia Bancária TLS 1.3</span>
+      <span aria-hidden="true">•</span>
+      <span>⚡ Crédito Instantâneo</span>
+    </p>
+  </div>
+</section>

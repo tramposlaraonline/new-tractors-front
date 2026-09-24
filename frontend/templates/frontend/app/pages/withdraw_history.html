@@ -1,0 +1,59 @@
+{% load frontend_format %}
+{# Histórico de Saques (/withdraw/history) — fragmento trocado dentro do #appView. Filtros no statement.js. #}
+<section class="app-page hs" data-page="withdraw-history" aria-labelledby="page-title-wh">
+  <div class="hs-top">
+    <a href="{% url 'frontend:withdraw' %}" class="dp-back" data-spa-link data-tab="profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+      Voltar ao Saque
+    </a>
+    <span class="hs-pill">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+      Comprovantes Pix
+    </span>
+  </div>
+
+  <div class="hs-hero">
+    <p class="hs-kicker"><span class="hs-kicker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>Extrato oficial de saques</p>
+    <h1 id="page-title-wh" class="hs-title">Histórico de Saques</h1>
+    <p class="hs-desc">Acompanhe o status, confirmação e liquidação das transferências Pix da sua conta.</p>
+    <dl class="hs-stats">
+      <div><dt>Solicitações</dt><dd>{{ history.counts.all }}</dd></div>
+      <div><dt>Concluídos</dt><dd class="is-green">{{ history.counts.done }}</dd></div>
+      <div><dt>Líquido pago</dt><dd>{{ history.net_paid|brl }}</dd></div>
+    </dl>
+  </div>
+
+  <div data-history>
+    <div class="hs-chips" role="group" aria-label="Filtrar saques">
+      <button type="button" class="hs-chip is-active" data-history-filter="all" aria-pressed="true">Todos{{ history.counts.all|count_suffix }}</button>
+      <button type="button" class="hs-chip" data-history-filter="done" aria-pressed="false">Concluídos{{ history.counts.done|count_suffix }}</button>
+      <button type="button" class="hs-chip" data-history-filter="processing" aria-pressed="false">Processando{{ history.counts.processing|count_suffix }}</button>
+      <button type="button" class="hs-chip" data-history-filter="other" aria-pressed="false">Cancelados/Outros{{ history.counts.other|count_suffix }}</button>
+    </div>
+    <ul class="hs-list">
+      {% for w in history.items %}
+        <li class="hs-item hs-withdraw" data-group="{{ w.group }}">
+          <div class="hs-withdraw-top">
+            <span class="hs-icon is-{{ w.group }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></span>
+            <div class="hs-text">
+              <p class="hs-item-title">Saque Pix <small>#{{ w.id }}</small></p>
+              <p class="hs-item-date">{{ w.created_at|date:"d/m/Y H:i" }}</p>
+            </div>
+            <div class="hs-right">
+              <p class="hs-amount is-neg">- {{ w.amount|brl }}</p>
+              <span class="hs-badge is-{{ w.group }}">{% if w.group == "done" %}✓ {% endif %}{{ w.status_label }}</span>
+            </div>
+          </div>
+          <dl class="hs-details">
+            <div><dt>{% if w.group == "done" %}Líquido recebido{% else %}Líquido a receber{% endif %}</dt><dd class="is-green">{{ w.net|brl }}</dd></div>
+            <div><dt>Taxa de saque</dt><dd>{{ w.fee|brl }}</dd></div>
+            <div class="hs-details-wide"><dt>Data de liquidação</dt><dd>{% if w.settled_at %}{{ w.settled_at|date:"d/m/Y H:i" }}{% elif w.group == "processing" %}Aguardando liquidação{% else %}—{% endif %}</dd></div>
+          </dl>
+        </li>
+      {% empty %}
+        <li class="st-empty">Nenhum saque solicitado ainda.</li>
+      {% endfor %}
+    </ul>
+    <p class="st-empty" data-history-empty hidden>Nenhum saque nesta categoria.</p>
+  </div>
+</section>

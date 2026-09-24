@@ -1,0 +1,13 @@
+{% extends "frontend/base.html" %}
+
+{% block title %}{{ title }} • New Tractors{% endblock %}
+
+{% block content %}
+  <main style="min-height:100dvh;display:grid;place-items:center;padding:24px;text-align:center;">
+    <div>
+      <h1 style="font-family:var(--font-display);color:var(--forest-950);margin-bottom:8px;">{{ title }}</h1>
+      <p style="color:var(--muted);margin-bottom:20px;">Tela ainda não reconstruída.</p>
+      <a href="{% url 'frontend:login' %}" style="color:var(--forest-700);font-weight:600;">Voltar ao login</a>
+    </div>
+  </main>
+{% endblock %}

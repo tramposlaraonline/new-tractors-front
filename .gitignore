@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+preview.sqlite3
+staticfiles/
+.venv/
+.env
+# Capturas do site original: material de referência, não vai para o repositório.
+prints/

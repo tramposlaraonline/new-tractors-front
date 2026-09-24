@@ -1,0 +1,36 @@
+{% load static %}
+{# Modais exibidos a cada carregamento completo da área logada: "Bem-vindo" e, ao fechar, o banner "Compartilhe e ganhe". #}
+{% with check='<span class="wl-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>' close='<button type="button" class="wl-close" data-wl-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>' %}
+
+<!-- Bem-vindo -->
+<div class="wl-overlay" id="welcomeModal" data-autoshow="1" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle" hidden>
+  <div class="wl-backdrop" data-wl-close></div>
+  <div class="wl-card" tabindex="-1">
+    <div class="wl-top">
+      {{ close|safe }}
+      <img class="wl-logo" src="{% static 'frontend/img/logo-new-tractors.png' %}" alt="New Tractors" width="1851" height="850">
+      <h2 id="welcomeTitle" class="wl-title">Bem-vindo à New Tractors</h2>
+    </div>
+    <div class="wl-body">
+      <p class="wl-lead">Descubra o que a New Tractors preparou para você.</p>
+      <ul class="wl-list">
+        <li>{{ check|safe }}<span>Comece com R$25 e faça a retirada do seu bônus de R$5.</span></li>
+        <li>{{ check|safe }}<span>Invista, acompanhe suas máquinas e aproveite os benefícios da empresa.</span></li>
+        <li>{{ check|safe }}<span>Monte sua equipe, alcance metas e desbloqueie novas recompensas.</span></li>
+      </ul>
+      <button type="button" class="wl-primary" data-wl-close>Explorar agora</button>
+      {% include "frontend/_welcome_parts.html" with part="community" %}
+    </div>
+  </div>
+</div>
+
+<!-- Compartilhe e ganhe (banner da campanha) -->
+<div class="wl-overlay" id="shareModal" data-autoshow="2" role="dialog" aria-modal="true" aria-label="Campanha Compartilhe e Ganhe" hidden>
+  <div class="wl-backdrop" data-wl-close></div>
+  <div class="wl-banner" tabindex="-1">
+    <button type="button" class="wl-close wl-banner-close" data-wl-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    <img src="{% static 'frontend/img/banner-compartilhe-ganhe.jpg' %}" width="900" height="1342"
+         alt="Campanha Compartilhe e Ganhe: bônus de R$ 2,50 para seus novos investimentos. Publique seus resultados em uma rede social com a data do dia, usando as hashtags #plataformanewtractors e #newtractors, e envie para um administrador para validar a recompensa.">
+  </div>
+</div>
+{% endwith %}

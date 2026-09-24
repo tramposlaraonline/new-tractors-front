@@ -1,0 +1,273 @@
+{% extends "frontend/base.html" %}
+{% load static %}
+
+{% comment %}
+  Casca da área logada (SPA): só o <main id="appView"> é trocado ao navegar entre abas.
+  A navbar e o botão de Chat nunca recarregam. Ver frontend/static/frontend/js/app.js.
+{% endcomment %}
+
+{% block viewport %}width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover{% endblock %}
+{% block title %}{{ page_title }} • New Tractors{% endblock %}
+{% block body_class %}app-body{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'frontend/css/app.css' %}">
+  {# CSS de todas as abas carregado de uma vez: numa troca SPA só o HTML chega. #}
+  <link rel="stylesheet" href="{% static 'frontend/css/home.css' %}">
+  <link rel="stylesheet" href="{% static 'frontend/css/profile.css' %}">
+  <link rel="stylesheet" href="{% static 'frontend/css/withdraw.css' %}">
+  <link rel="stylesheet" href="{% static 'frontend/css/deposit.css' %}">
+  <link rel="stylesheet" href="{% static 'frontend/css/purchases.css' %}">
+  <link rel="stylesheet" href="{% static 'frontend/css/statement.css' %}">
+  <link rel="stylesheet" href="{% static 'frontend/css/team.css' %}">
+  <link rel="stylesheet" href="{% static 'frontend/css/history.css' %}">
+  <link rel="stylesheet" href="{% static 'frontend/css/extras.css' %}">
+  <link rel="stylesheet" href="{% static 'frontend/css/welcome.css' %}">
+{% endblock %}
+
+{% block content %}
+  <!-- Menu lateral (só desktop; no mobile a navegação é a navbar de baixo) -->
+  <aside class="app-sidebar" aria-label="Menu">
+    <a href="{% url 'frontend:home' %}" class="app-sidebar-logo" data-spa-link data-tab="home" aria-label="New Tractors — Início">
+      <img src="{% static 'frontend/img/logo-new-tractors.png' %}" alt="" width="1851" height="850">
+    </a>
+    <a href="{% url 'frontend:deposit' %}" class="app-sidebar-deposit" data-spa-link data-tab="deposit">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="m8 12 4 4 4-4"/></svg>
+      Depositar Saldo
+    </a>
+    <nav class="app-sidebar-nav" aria-label="Navegação principal">
+      {% for item in sidebar_items %}
+        <a href="{% url item.url_name %}" class="app-side-link{% if item.key == app_tab %} is-active{% endif %}" data-spa-link data-tab="{{ item.key }}"
+           {% if item.key == app_tab %}aria-current="page"{% endif %}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            {% if item.key == 'home' %}<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            {% elif item.key == 'team' %}<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            {% elif item.key == 'purchases' %}<path d="M16 10a4 4 0 0 1-8 0"/><path d="M3.103 6.034h17.794"/><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"/>
+            {% elif item.key == 'statement' %}<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+            {% elif item.key == 'profile' %}<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>{% endif %}
+          </svg>
+          <span>{{ item.label }}</span>
+        </a>
+      {% endfor %}
+    </nav>
+    <div class="app-sidebar-footer">
+      <div class="app-sidebar-user">
+        <span class="app-sidebar-avatar" aria-hidden="true">{{ header.user_initials }}</span>
+        <div class="app-sidebar-user-text">
+          <strong>{{ header.user_name }}</strong>
+          {% if header.plan_name %}<small>{{ header.plan_name }}</small>{% endif %}
+        </div>
+      </div>
+      <button type="button" class="app-sidebar-action" data-open-modal="supportModal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>
+        Suporte Técnico
+      </button>
+      <form method="post" action="{% url 'frontend:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="app-sidebar-action app-sidebar-logout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+          Sair da conta
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Cabeçalho fixo (logo + suporte + notificações) -->
+  <header class="app-header">
+    <a href="{% url 'frontend:home' %}" class="app-header-logo" data-spa-link data-tab="home" aria-label="New Tractors — Início">
+      <img src="{% static 'frontend/img/logo-new-tractors.png' %}" alt="" width="1851" height="850">
+    </a>
+    <div class="app-header-actions">
+      <button type="button" class="app-header-btn app-header-btn-support" aria-label="Suporte" data-open-modal="supportModal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>
+          </svg>
+      </button>
+      <button type="button" class="app-header-btn app-header-btn-bell" data-open-notifications
+              aria-label="Notificações{% if header.has_unread_notifications %} (há novas){% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10.268 21a2 2 0 0 0 3.464 0"/>
+          <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
+        </svg>
+        {% if header.has_unread_notifications %}<span class="app-header-dot" aria-hidden="true"></span>{% endif %}
+      </button>
+    </div>
+  </header>
+
+  <main id="appView" class="app-view" tabindex="-1" data-tab="{{ app_tab }}">
+    {% include page_template %}
+  </main>
+
+  <!-- Botão flutuante de atendimento -->
+  <button type="button" class="app-chat-fab" aria-label="Chat de atendimento" data-open-modal="supportModal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
+        <path d="M8 12h.01"/>
+        <path d="M12 12h.01"/>
+        <path d="M16 12h.01"/>
+      </svg>
+      <span>Chat</span>
+  </button>
+
+  <!-- Extrato de movimentações (modal global, aberto por [data-open-statement]) -->
+  <div class="nt-modal st-modal" id="statementModal" data-statement-root role="dialog" aria-modal="true" aria-labelledby="statementTitle" hidden
+       data-statement-url="{% url 'frontend:statement' %}">
+    <div class="nt-modal-backdrop" data-close-modal></div>
+    <div class="nt-modal-card st-card" tabindex="-1">
+      <div class="fm-head st-head">
+        <span class="fm-head-icon st-head-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span>
+        <div>
+          <h2 id="statementTitle">Extrato de Movimentações</h2>
+          <p>Histórico completo da sua conta</p>
+        </div>
+        <button type="button" class="st-close" data-close-modal aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="st-chips" role="group" aria-label="Filtrar movimentações">
+        {% for key, label in statement_filters %}
+          <button type="button" class="st-chip" data-statement-filter="{{ key }}" aria-pressed="false">{{ label }}</button>
+        {% endfor %}
+      </div>
+      <div class="st-scroll" data-statement-scroll>
+        <ul class="st-list" data-statement-list aria-live="polite"></ul>
+        <div class="st-foot" data-statement-foot>
+          <span class="dp-spinner" aria-hidden="true"></span><span>Carregando movimentações...</span>
+        </div>
+        <div class="st-foot st-error" data-statement-error hidden>
+          <span data-statement-error-text></span>
+          <button type="button" class="st-retry" data-statement-retry>Tentar novamente</button>
+        </div>
+        <div data-statement-sentinel></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notificações (painel lateral, aberto pelo sino) -->
+  <div class="nt-modal nt-drawer" id="notifModal" role="dialog" aria-modal="true" aria-labelledby="notifTitle" hidden
+       data-notif-url="{% url 'frontend:notifications' %}" data-notif-read-url="{% url 'frontend:notifications_read' %}">
+    <div class="nt-modal-backdrop" data-close-modal></div>
+    <div class="nt-modal-card nf-card" tabindex="-1">
+      <div class="fm-head nf-head">
+        <span class="fm-head-icon nf-head-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg></span>
+        <div>
+          <h2 id="notifTitle">Notificações</h2>
+          <p>Alertas de equipamentos e rendimentos</p>
+        </div>
+        <button type="button" class="st-close" data-close-modal aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="nf-scroll">
+        <ul class="nf-list" data-notif-list aria-live="polite"></ul>
+        <div class="st-foot" data-notif-loading><span class="dp-spinner" aria-hidden="true"></span><span>Carregando notificações...</span></div>
+        <p class="st-foot st-error" data-notif-error hidden></p>
+      </div>
+      <div class="nf-foot">
+        <button type="button" class="nf-read" data-notif-read>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <span data-notif-read-label>Marcar todas como lidas</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Suporte oficial (Chat, fone do cabeçalho, menu, atalhos) -->
+  <div class="nt-modal" id="supportModal" role="dialog" aria-modal="true" aria-labelledby="supportTitle" hidden>
+    <div class="nt-modal-backdrop" data-close-modal></div>
+    <div class="nt-modal-card fm-card" tabindex="-1">
+      <div class="fm-head">
+        <span class="fm-head-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg></span>
+        <div>
+          <h2 id="supportTitle">Suporte oficial</h2>
+          <p>Atendimento no WhatsApp e Telegram</p>
+        </div>
+        <button type="button" class="st-close" data-close-modal aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="fm-body">
+        <p class="sp-text">Fale com a equipe New Tractors pelo canal de sua preferência. Tenha em mãos o telefone da sua conta.</p>
+        {% if whatsapp_url %}
+          <a href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer" class="sp-channel is-whatsapp">
+            <span class="sp-channel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></span>
+            <span class="sp-channel-text"><strong>WhatsApp</strong><small>Atendimento humanizado</small></span>
+            <svg class="sp-channel-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+          </a>
+        {% endif %}
+        {% if telegram_url %}
+          <a href="{{ telegram_url }}" target="_blank" rel="noopener noreferrer" class="sp-channel is-telegram">
+            <span class="sp-channel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg></span>
+            <span class="sp-channel-text"><strong>Telegram</strong><small>Canal oficial e suporte</small></span>
+            <svg class="sp-channel-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+          </a>
+        {% endif %}
+        {% if support_url %}
+          <a href="{{ support_url }}" target="_blank" rel="noopener noreferrer" class="sp-channel">
+            <span class="sp-channel-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg></span>
+            <span class="sp-channel-text"><strong>Central de atendimento</strong><small>Fale com a equipe</small></span>
+            <svg class="sp-channel-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+          </a>
+        {% endif %}
+        {% if not whatsapp_url and not telegram_url and not support_url %}
+          <p class="sp-empty">Os canais de atendimento estão indisponíveis no momento. Tente novamente mais tarde.</p>
+        {% endif %}
+        <button type="button" class="fm-cancel" data-close-modal>Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  {% include "frontend/app/_welcome_modals.html" %}
+
+  <!-- Navbar fixa (5 abas) -->
+  <nav class="app-tabbar" aria-label="Navegação principal">
+    <div class="app-tabbar-inner">
+      {% for tab in app_tabs %}
+        <a href="{% url tab.url_name %}" data-spa-link data-tab="{{ tab.key }}"
+           class="app-tab{% if tab.key == 'deposit' %} app-tab-deposit{% endif %}{% if tab.key == app_tab %} is-active{% endif %}"
+           {% if tab.key == app_tab %}aria-current="page"{% endif %}>
+          <span class="{% if tab.key == 'deposit' %}app-tab-deposit-circle{% else %}app-tab-icon{% endif %}" aria-hidden="true">
+            {% if tab.key == 'home' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>
+                <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              </svg>
+            {% elif tab.key == 'team' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            {% elif tab.key == 'deposit' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v8"/>
+                <path d="m8 12 4 4 4-4"/>
+              </svg>
+            {% elif tab.key == 'purchases' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 10a4 4 0 0 1-8 0"/>
+                <path d="M3.103 6.034h17.794"/>
+                <path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"/>
+              </svg>
+            {% elif tab.key == 'profile' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            {% endif %}
+          </span>
+          <span class="app-tab-label">{{ tab.label }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </nav>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'frontend/js/app.js' %}" defer></script>
+  <script src="{% static 'frontend/js/home.js' %}" defer></script>
+  <script src="{% static 'frontend/js/withdraw.js' %}" defer></script>
+  <script src="{% static 'frontend/js/deposit.js' %}" defer></script>
+  <script src="{% static 'frontend/js/purchases.js' %}" defer></script>
+  <script src="{% static 'frontend/js/statement.js' %}" defer></script>
+  <script src="{% static 'frontend/js/team.js' %}" defer></script>
+  <script src="{% static 'frontend/js/notifications.js' %}" defer></script>
+  <script src="{% static 'frontend/js/forms.js' %}" defer></script>
+  <script src="{% static 'frontend/js/welcome.js' %}" defer></script>
+{% endblock %}

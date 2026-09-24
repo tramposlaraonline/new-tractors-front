@@ -1,0 +1,148 @@
+{% load frontend_format %}
+{# Minha Equipe & Indicações (/equipe) — fragmento trocado dentro do #appView. Lógica em team.js. #}
+<section class="app-page tm" data-page="team" aria-labelledby="page-title-team" data-team>
+  <h1 id="page-title-team" class="tm-title">Minha Equipe &amp; Indicações</h1>
+  <p class="tm-subtitle">Convide parceiros e receba comissões automáticas sobre cada equipamento ativado na sua rede.</p>
+
+  <div class="tm-switch" role="tablist" aria-label="Seções da equipe">
+    <button type="button" class="tm-switch-btn{% if team_section == 'team' %} is-active{% endif %}" role="tab" id="tmTabTeam"
+            aria-controls="tmPanelTeam" aria-selected="{% if team_section == 'team' %}true{% else %}false{% endif %}" data-team-tab="team">Minha equipe</button>
+    <button type="button" class="tm-switch-btn{% if team_section == 'goals' %} is-active{% endif %}" role="tab" id="tmTabGoals"
+            aria-controls="tmPanelGoals" aria-selected="{% if team_section == 'goals' %}true{% else %}false{% endif %}" data-team-tab="goals">Metas</button>
+  </div>
+
+  <!-- ================= MINHA EQUIPE ================= -->
+  <div id="tmPanelTeam" role="tabpanel" aria-labelledby="tmTabTeam" data-team-panel="team" {% if team_section != 'team' %}hidden{% endif %}>
+    <div class="pc-stat pc-stat-dark tm-first">
+      <div>
+        <p class="pc-stat-label">Comissões creditadas</p>
+        <p class="pc-stat-value">{{ team.commissions_total|brl }}</p>
+        <p class="pc-stat-note">Total real já creditado pelas suas indicações</p>
+      </div>
+    </div>
+
+    <div class="tm-card">
+      <div class="tm-card-top">
+        <p class="pc-stat-label">Total de indicados</p>
+        <svg class="tm-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <p class="pc-stat-count"><strong>{{ team.members_total }}</strong> membros</p>
+      <p class="tm-active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 21a8 8 0 0 1 13.292-6"/><circle cx="10" cy="8" r="5"/><path d="m16 19 2 2 4-4"/></svg><strong>{{ team.active_total }} ativos</strong> com equipamentos em andamento</p>
+      <p class="tm-card-row"><span>Taxa de ativação:</span><strong>{{ team.activation_rate }}%</strong></p>
+    </div>
+
+    <div class="tm-card">
+      <div class="tm-card-top">
+        <p class="pc-stat-label">Volume da rede</p>
+        <svg class="tm-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      </div>
+      <p class="tm-volume">{{ team.network_volume|brl }}</p>
+      <p class="pc-stat-note">Total investido em equipamentos pelos seus 3 níveis</p>
+      <p class="tm-card-row"><span>Comissões pagas:</span><strong class="is-green">Instantâneo via PIX</strong></p>
+    </div>
+
+    <!-- Convite -->
+    <div class="tm-card tm-invite">
+      <h2 class="tm-h2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>Compartilhar Convite</h2>
+      <p class="pc-stat-note">Divulgue seu link exclusivo e receba comissões automáticas a cada equipamento ativado na sua rede</p>
+      {% if invite_url %}
+        <p class="tm-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span data-invite-url>{{ invite_url }}</span></p>
+        <div class="tm-invite-actions">
+          <button type="button" class="tm-copy" data-copy-invite>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            <span data-copy-invite-label>Copiar Link</span>
+          </button>
+          <a href="{{ whatsapp_share_url }}" target="_blank" rel="noopener noreferrer" class="tm-whats">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+            WhatsApp
+            <svg class="tm-whats-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+          </a>
+        </div>
+      {% else %}
+        <p class="tm-link tm-link-empty">Seu link de convite estará disponível em instantes.</p>
+      {% endif %}
+    </div>
+
+    <!-- Comissões por nível -->
+    <h2 class="tm-h2 tm-section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>Comissões por Nível</h2>
+    {% for lv in team.levels %}
+      <div class="tm-card tm-level">
+        <div class="tm-level-top">
+          <span class="tm-level-badge">{{ lv.level }}º Nível ({{ lv.name }})</span>
+          <strong class="tm-level-pct">{{ lv.percent|floatformat:"-2" }}%</strong>
+        </div>
+        <p class="tm-level-row"><span>Membros:</span><strong>{{ lv.members }} ({{ lv.active }} ativos)</strong></p>
+        <p class="tm-level-row"><span>Volume:</span><strong>{{ lv.volume|brl }}</strong></p>
+        <p class="tm-card-row tm-level-total"><span>Total creditado:</span><strong>{{ lv.credited|brl }}</strong></p>
+      </div>
+    {% endfor %}
+
+    <!-- Membros -->
+    <div class="tm-card tm-members">
+      <div class="tm-members-head">
+        <h2 class="tm-h2">Membros Indicados</h2>
+        <span class="tm-pill">{{ team.members_total }} membros</span>
+      </div>
+      <p class="pc-stat-note">Histórico detalhado dos parceiros e volume registrado na sua rede</p>
+      <div class="tm-filter" role="group" aria-label="Filtrar por nível">
+        <button type="button" class="tm-filter-btn is-active" data-member-filter="all" aria-pressed="true">Todos ({{ team.members|length }})</button>
+        {% for lv in team.levels %}
+          <button type="button" class="tm-filter-btn" data-member-filter="{{ lv.level }}" aria-pressed="false">Nível {{ lv.level }} ({{ lv.percent|floatformat:"-2" }}%)</button>
+        {% endfor %}
+      </div>
+      <ul class="tm-member-list">
+        {% for m in team.members %}
+          <li class="tm-member" data-level="{{ m.level }}">
+            <div class="tm-member-top">
+              <span class="tm-member-badge" aria-label="Nível {{ m.level }}">N{{ m.level }}</span>
+              <div class="tm-member-info">
+                <p class="tm-member-name">{{ m.name }}</p>
+                <p class="tm-member-meta">
+                  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>{{ m.phone|phone_br }}</span>
+                  <span class="pc-dot" aria-hidden="true">•</span>
+                  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>{{ m.joined_at|date:"d/m/Y" }}</span>
+                </p>
+              </div>
+              <span class="pc-status{% if not m.active %} is-finished{% endif %}">{% if m.active %}Ativo{% else %}Inativo{% endif %}</span>
+            </div>
+            <p class="tm-member-invested"><span>Investido em equipamentos</span><strong>{{ m.invested|brl }}</strong></p>
+          </li>
+        {% empty %}
+          <li class="tm-empty">Você ainda não tem indicados. Compartilhe seu link de convite para começar.</li>
+        {% endfor %}
+      </ul>
+      <p class="tm-empty" data-member-empty hidden>Nenhum membro neste nível ainda.</p>
+    </div>
+  </div>
+
+  <!-- ================= METAS ================= -->
+  <div id="tmPanelGoals" role="tabpanel" aria-labelledby="tmTabGoals" data-team-panel="goals" {% if team_section != 'goals' %}hidden{% endif %}>
+    <div class="tm-card tm-goals">
+      <div class="tm-members-head">
+        <h2 class="tm-h2 tm-goals-title">Metas da equipe</h2>
+        <span class="tm-pill is-green">{{ team.goals|length }} metas</span>
+      </div>
+      <p class="pc-stat-note">Complete os convidados com primeira compra e o volume da sua rede.</p>
+      {% for g in team.goals %}
+        <div class="tm-goal">
+          <p class="tm-goal-kicker">Meta de equipe</p>
+          <p class="tm-goal-prize">Prêmio de {{ g.prize|brl }}</p>
+          <span class="tm-goal-status{% if g.claimed %} is-claimed{% endif %}">{% if g.claimed %}Resgatada{% else %}Em andamento{% endif %}</span>
+          <div class="tm-goal-row"><span>Convidados com primeira compra</span><strong>{{ g.invites_done }} / {{ g.invites_target }}</strong></div>
+          <div class="tm-bar" role="progressbar" aria-label="Convidados com primeira compra" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ g.invites_pct }}"><span style="width: {{ g.invites_pct }}%"></span></div>
+          <div class="tm-goal-row"><span>Volume da equipe</span><strong>{{ g.volume_done|brl }} / {{ g.volume_target|brl }}</strong></div>
+          <div class="tm-bar" role="progressbar" aria-label="Volume da equipe" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ g.volume_pct }}"><span style="width: {{ g.volume_pct }}%"></span></div>
+          <p class="tm-goal-foot{% if g.claimed %} is-claimed{% endif %}">
+            {% if g.claimed %}
+              Prêmio resgatado{% if g.claimed_at %} em {{ g.claimed_at|date:"d/m/Y" }}{% endif %}
+            {% else %}
+              Faltam <strong>{{ g.invites_missing }} convidados</strong> e <strong>{{ g.volume_missing|brl }}</strong> em compras da equipe.
+            {% endif %}
+          </p>
+        </div>
+      {% empty %}
+        <p class="tm-empty">Nenhuma meta disponível no momento.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>

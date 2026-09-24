@@ -1,0 +1,184 @@
+{% load frontend_format %}
+{# Solicitar Saque Pix (/withdraw) — fragmento trocado dentro do #appView. Lógica em withdraw.js. #}
+<section class="app-page wd" data-page="withdraw" aria-labelledby="page-title-withdraw"
+         data-withdraw data-withdraw-url="{% url 'frontend:action_withdraw' %}"
+         data-balance-cents="{{ withdraw_js.balance_cents }}" data-min-cents="{{ withdraw_js.min_cents }}"
+         data-fee-bp="{{ withdraw_js.fee_bp }}" data-has-key="{% if withdraw.pix_key %}1{% else %}0{% endif %}">
+  <h1 id="page-title-withdraw" class="visually-hidden">Solicitar Saque Pix</h1>
+
+  <!-- Saldo disponível -->
+  <div class="wd-balance">
+    <div>
+      <p class="wd-balance-label">Saldo disponível para saque</p>
+      <p class="wd-balance-value" data-wallet="withdraw_balance">{{ wallet.withdraw_balance|brl }}</p>
+      <p class="wd-balance-note">Rendimentos de equipamentos e bônus acumulados</p>
+    </div>
+    <button type="button" class="wd-balance-all" data-withdraw-all>Sacar Total</button>
+  </div>
+
+  <!-- Formulário -->
+  <div class="wd-card">
+    <div class="wd-card-head">
+      <span class="wd-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></span>
+      <div>
+        <h2>Solicitar Transferência Pix</h2>
+        <p>Transferência direta e automática para sua conta bancária</p>
+      </div>
+    </div>
+
+    <div class="wd-row-label">
+      <label for="withdrawAmount">Valor do saque</label>
+      <span>Mínimo: <strong>{{ withdraw.min_amount|brl }}</strong></span>
+    </div>
+    <div class="wd-amount">
+      <span aria-hidden="true">R$</span>
+      <input id="withdrawAmount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00"
+             autocomplete="off" data-withdraw-amount aria-describedby="withdrawAmountError">
+    </div>
+    <p id="withdrawAmountError" class="wd-amount-error" data-withdraw-error role="alert" hidden></p>
+
+    <div class="wd-row-label">
+      <span class="wd-label">Conta Pix de destino</span>
+      {% if withdraw.pix_key %}<span class="wd-linked">✓ Chave Vinculada</span>{% endif %}
+    </div>
+    {% if withdraw.pix_key %}
+      <div class="wd-pix">
+        <div class="wd-pix-row">
+          <div>
+            <p class="wd-pix-label">Titular da conta</p>
+            <p class="wd-pix-holder">{{ withdraw.pix_key.holder_name }}</p>
+          </div>
+          <span class="wd-pix-type">{{ withdraw.pix_key.type_label }}</span>
+        </div>
+        <div class="wd-pix-row wd-pix-row-bottom">
+          <div>
+            <p class="wd-pix-label">Chave Pix</p>
+            <p class="wd-pix-key">{{ withdraw.pix_key.key }}</p>
+          </div>
+          {% if withdraw.pix_key.document %}
+            <div class="wd-pix-doc">
+              <p class="wd-pix-label">CPF</p>
+              <p>{{ withdraw.pix_key.document }}</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      <div class="wd-nokey">
+        <p class="wd-nokey-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>Nenhuma Chave Pix Cadastrada</p>
+        <p class="wd-nokey-text">Para solicitar saques, vincule previamente sua chave Pix antes de continuar.</p>
+        <button type="button" class="wd-nokey-btn" data-register-pix>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+          Cadastrar Chave Pix Agora
+        </button>
+      </div>
+    {% endif %}
+
+    <dl class="wd-fees">
+      <div><dt>Taxa de Saque:</dt><dd>{{ withdraw.fee_percent|floatformat:1 }}%</dd></div>
+      <div><dt>Prazo de Liquidação:</dt><dd><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>{{ withdraw.settlement }}</dd></div>
+      <div class="wd-fees-net"><dt>Valor Líquido a Receber:</dt><dd data-withdraw-net>R$ 0,00</dd></div>
+    </dl>
+
+    <button type="button" class="wd-submit" data-withdraw-submit disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
+      <span data-withdraw-submit-label>Confirmar Saque Pix</span>
+    </button>
+  </div>
+
+  <!-- Saques recentes -->
+  <div class="wd-recent">
+    <div class="wd-recent-head">
+      <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Saques recentes</h2>
+      <a href="{% url 'frontend:withdraw_history' %}" class="wd-recent-all" data-spa-link data-tab="profile">Ver todos →</a>
+    </div>
+    <ul class="wd-recent-list" data-withdraw-recent>
+      {% include "frontend/app/pages/_withdraw_recent.html" %}
+    </ul>
+  </div>
+
+  <!-- Cadastro da chave Pix de saque -->
+  <div class="nt-modal" id="pixKeyModal" role="dialog" aria-modal="true" aria-labelledby="pixKeyTitle" hidden>
+    <div class="nt-modal-backdrop" data-close-modal></div>
+    <form class="nt-modal-card fm-card" tabindex="-1" data-pix-key-form action="{% url 'frontend:action_pix_key' %}" novalidate>
+      <div class="fm-head">
+        <span class="fm-head-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></span>
+        <div>
+          <h2 id="pixKeyTitle">Cadastrar Chave Pix</h2>
+          <p>Destino dos seus saques</p>
+        </div>
+        <button type="button" class="fm-close" data-close-modal aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="fm-body">
+        <div class="fm-note">
+          <p class="fm-note-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Transferência segura</p>
+          <p>Os saques são enviados somente para uma chave Pix de <strong>sua titularidade</strong>. Confira a chave antes de salvar.</p>
+        </div>
+        <p class="fm-label" id="pixTypeLabel">Tipo de chave</p>
+        <div class="fm-chips" role="radiogroup" aria-labelledby="pixTypeLabel">
+          <label class="fm-chip"><input type="radio" name="key_type" value="cpf" checked><span>CPF</span></label>
+          <label class="fm-chip"><input type="radio" name="key_type" value="cnpj"><span>CNPJ</span></label>
+          <label class="fm-chip"><input type="radio" name="key_type" value="phone"><span>Telefone</span></label>
+          <label class="fm-chip"><input type="radio" name="key_type" value="email"><span>E-mail</span></label>
+          <label class="fm-chip"><input type="radio" name="key_type" value="random"><span>Aleatória</span></label>
+        </div>
+        <label class="fm-label" for="pixKey">Chave Pix</label>
+        <input class="fm-input fm-mono" id="pixKey" name="key" type="text" inputmode="numeric" autocomplete="off" maxlength="77" placeholder="000.000.000-00" data-pix-key-input aria-describedby="pixKeyError">
+        <p class="fm-error" id="pixKeyError" data-field-error="key" hidden></p>
+        <p class="fm-error" data-form-error role="alert" hidden></p>
+        <button type="submit" class="fm-submit" data-pix-key-submit>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+          Salvar Chave Pix
+        </button>
+        <button type="button" class="fm-cancel" data-close-modal>Cancelar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="nt-modal" id="pixKeySuccess" role="alertdialog" aria-modal="true" aria-labelledby="pixKeySuccessTitle" hidden>
+    <div class="nt-modal-backdrop"></div>
+    <div class="nt-modal-card wd-dialog" tabindex="-1">
+      <span class="wd-dialog-icon is-success" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <h2 id="pixKeySuccessTitle">Chave Pix Cadastrada!</h2>
+      <p>Sua chave foi vinculada. Agora você já pode solicitar saques.</p>
+    </div>
+  </div>
+
+  <!-- Diálogos (estilo do site: caixa branca com ícone circular) -->
+  <div class="nt-modal" id="withdrawConfirm" role="alertdialog" aria-modal="true" aria-labelledby="withdrawConfirmTitle" hidden>
+    <div class="nt-modal-backdrop" data-close-modal></div>
+    <div class="nt-modal-card wd-dialog" tabindex="-1">
+      <span class="wd-dialog-icon is-question" aria-hidden="true">?</span>
+      <h2 id="withdrawConfirmTitle">Confirmar Saque?</h2>
+      <p>Deseja transferir <strong data-withdraw-confirm-amount></strong> para sua chave Pix cadastrada?</p>
+      <div class="wd-dialog-actions">
+        <button type="button" class="wd-dialog-btn is-green" data-withdraw-confirm>Sim, transferir</button>
+        <button type="button" class="wd-dialog-btn is-brown" data-close-modal>Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="nt-modal" id="withdrawSuccess" role="alertdialog" aria-modal="true" aria-labelledby="withdrawSuccessTitle" hidden>
+    <div class="nt-modal-backdrop" data-close-modal></div>
+    <div class="nt-modal-card wd-dialog" tabindex="-1">
+      <span class="wd-dialog-icon is-success" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <h2 id="withdrawSuccessTitle">Saque Solicitado com Sucesso!</h2>
+      <p data-withdraw-success-message></p>
+      <div class="wd-dialog-actions">
+        <button type="button" class="wd-dialog-btn is-green" data-close-modal>OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="nt-modal" id="withdrawError" role="alertdialog" aria-modal="true" aria-labelledby="withdrawErrorTitle" hidden>
+    <div class="nt-modal-backdrop" data-close-modal></div>
+    <div class="nt-modal-card wd-dialog" tabindex="-1">
+      <span class="wd-dialog-icon is-error" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
+      <h2 id="withdrawErrorTitle">Erro no Saque</h2>
+      <p data-withdraw-error-message></p>
+      <div class="wd-dialog-actions">
+        <button type="button" class="wd-dialog-btn is-dark" data-close-modal>OK</button>
+      </div>
+    </div>
+  </div>
+</section>

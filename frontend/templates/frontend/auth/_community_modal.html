@@ -1,0 +1,36 @@
+{% load static %}
+{# "Entre na comunidade": ao carregar login/cadastro, só se houver link de comunidade cadastrado no admin. #}
+{% if community.has_community %}
+<div class="wl-overlay" id="communityModal" data-autoshow="1" role="dialog" aria-modal="true" aria-labelledby="communityTitle" hidden>
+  <div class="wl-backdrop" data-wl-close></div>
+  <div class="wl-card" tabindex="-1">
+    <div class="wl-top">
+      <button type="button" class="wl-close" data-wl-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      <h2 id="communityTitle" class="wl-title">ATENÇÃO</h2>
+    </div>
+    <div class="wl-body">
+      <p class="wl-lead">Prezados investidores, informamos que a New Tractors foi <b>alvo de um ataque cibernético coordenado na terça-feira, dia 22/09</b>, o que resultou na queda de nossos servidores e na perda de nossos canais de comunicação.</p>
+      <br>
+      <p class="wl-lead">Após 48h de trabalho intenso da nossa equipe de segurança, iniciamos o processo de reestabelecer a plataforma. Devido a grande quantidade de acessos à plataforma, estamos normalizando os acessos dos usuários aos poucos. O prazo para normalização total dos acessos é <b>até 23h00 de hoje</b>.</p>
+      <br>
+      <p class="wl-lead">Não se preocupem, pois a <b>integridade dos saldos de todas as contas foi preservada, e os saques serão liberados</b> em breve. Clique nos botões abaixo para entrar nos novos canais oficiais de comunicação, para ter atualizações do status da sua conta em tempo real. Agradecemos a compreensão.</p>
+      <ul class="wl-list">
+      </ul>
+      <div class="wl-community wl-community-big">
+        {% if community.community_whatsapp %}
+          <a href="{{ community.community_whatsapp }}" target="_blank" rel="noopener noreferrer" class="wl-btn-whats">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+            WhatsApp
+          </a>
+        {% endif %}
+        {% if community.community_telegram %}
+          <a href="{{ community.community_telegram }}" target="_blank" rel="noopener noreferrer" class="wl-btn-tele">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>
+            Telegram
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}

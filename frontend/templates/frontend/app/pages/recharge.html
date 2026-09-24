@@ -1,0 +1,127 @@
+{% load frontend_format %}
+{# Depositar Saldo Pix (/recharge) — fragmento trocado dentro do #appView. Lógica em deposit.js. #}
+<section class="app-page dp" data-page="deposit" aria-labelledby="page-title-deposit"
+         data-deposit data-deposit-url="{% url 'frontend:action_deposit' %}" data-cpf-url="{% url 'frontend:action_cpf' %}"
+         data-min-cents="{{ deposit_js.min_cents }}" data-max-cents="{{ deposit_js.max_cents }}"
+         data-cpf-registered="{% if deposit.cpf_registered %}1{% else %}0{% endif %}">
+  <h1 id="page-title-deposit" class="visually-hidden">Depositar Saldo Pix</h1>
+
+  <a href="{% url 'frontend:home' %}" class="dp-back" data-spa-link data-tab="home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+    Voltar ao início
+  </a>
+
+  <div class="wd-balance dp-balance">
+    <div>
+      <p class="wd-balance-label">Saldo para investir</p>
+      <p class="wd-balance-value" data-wallet="invest_balance">{{ wallet.invest_balance|brl }}</p>
+      <p class="wd-balance-note">Disponível para ativar novos equipamentos</p>
+    </div>
+    <span class="dp-balance-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></svg></span>
+  </div>
+
+  <div class="wd-card">
+    <div class="wd-card-head">
+      <span class="wd-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span>
+      <div>
+        <h2>Depositar Saldo Pix</h2>
+        <p>Crédito automático e instantâneo na sua conta New Tractors</p>
+      </div>
+    </div>
+
+    <p class="wd-row-label"><span class="wd-label" id="dpPresetsLabel">Selecione o valor do aporte</span></p>
+    <div class="dp-presets" role="group" aria-labelledby="dpPresetsLabel">
+      {% for preset in deposit.presets %}
+        <button type="button" class="dp-preset" data-preset-cents="{% widthratio preset 1 100 %}" aria-pressed="false">{{ preset|brl_short }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="wd-row-label">
+      <label for="depositAmount">Ou digite outro valor</label>
+      <span>Mínimo: <strong>{{ deposit.min_amount|brl }}</strong></span>
+    </div>
+    <div class="wd-amount">
+      <span aria-hidden="true">R$</span>
+      <input id="depositAmount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00"
+             autocomplete="off" data-deposit-amount aria-describedby="depositAmountError">
+    </div>
+    <p id="depositAmountError" class="wd-amount-error" data-deposit-error role="alert" hidden></p>
+
+    <div class="dp-cpf" data-cpf-box {% if deposit.cpf_registered %}hidden{% endif %}>
+      <div class="dp-cpf-head">
+        <span class="dp-cpf-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
+        <div>
+          <p class="dp-cpf-title">CPF obrigatório para depósito <span class="dp-cpf-badge">Pendente</span></p>
+          <p class="dp-cpf-text">Conforme regulamentação do Banco Central para emissão do Pix Dinâmico, você deve cadastrar seu CPF antes de realizar depósitos.</p>
+        </div>
+      </div>
+      <button type="button" class="dp-cpf-btn" data-open-cpf>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Cadastrar CPF do Titular
+      </button>
+    </div>
+    <p class="dp-cpf-ok" data-cpf-ok {% if not deposit.cpf_registered %}hidden{% endif %}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+      CPF do titular vinculado <span data-cpf-masked>{{ deposit.cpf_masked }}</span>
+    </p>
+
+    <button type="button" class="wd-submit dp-submit" data-deposit-submit>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+      <span data-deposit-submit-label>Gerar Chave Pix</span>
+    </button>
+    <p class="dp-trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Transação Segura</span>
+      <span aria-hidden="true">•</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Liberação Automática</span>
+    </p>
+  </div>
+
+  <!-- Identificação do titular (CPF) -->
+  <div class="nt-modal" id="cpfModal" role="dialog" aria-modal="true" aria-labelledby="cpfModalTitle" hidden>
+    <div class="nt-modal-backdrop" data-close-modal></div>
+    <form class="nt-modal-card fm-card" tabindex="-1" data-cpf-form novalidate>
+      <div class="fm-head">
+        <span class="fm-head-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+        <div>
+          <h2 id="cpfModalTitle">Identificação do Titular</h2>
+          <p>Obrigatório para depósitos Pix</p>
+        </div>
+        <button type="button" class="fm-close" data-close-modal aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="fm-body">
+        <div class="fm-note">
+          <p class="fm-note-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Conformidade com o Banco Central</p>
+          <p>Para emissão da cobrança Pix e conciliação instantânea do seu depósito<span data-cpf-amount-wrap> de <strong data-cpf-amount></strong></span>, precisamos vincular o seu CPF ao cadastro.</p>
+        </div>
+        <label class="fm-label" for="cpfNumber">CPF</label>
+        <input class="fm-input fm-mono" id="cpfNumber" name="cpf" type="text" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00" data-mask="cpf" aria-describedby="cpfNumberError">
+        <p class="fm-error" id="cpfNumberError" data-field-error="cpf" hidden></p>
+        <p class="fm-error" data-form-error role="alert" hidden></p>
+        <button type="submit" class="fm-submit" data-cpf-submit>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+          Confirmar CPF e Continuar
+        </button>
+        <button type="button" class="fm-cancel" data-close-modal>Cancelar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="nt-modal" id="cpfSuccess" role="alertdialog" aria-modal="true" aria-labelledby="cpfSuccessTitle" hidden>
+    <div class="nt-modal-backdrop"></div>
+    <div class="nt-modal-card wd-dialog" tabindex="-1">
+      <span class="wd-dialog-icon is-success" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <h2 id="cpfSuccessTitle">CPF Cadastrado!</h2>
+      <p>Dados vinculados com sucesso. Prosseguindo com o Pix...</p>
+    </div>
+  </div>
+
+  <div class="nt-modal" id="depositError" role="alertdialog" aria-modal="true" aria-labelledby="depositErrorTitle" hidden>
+    <div class="nt-modal-backdrop" data-close-modal></div>
+    <div class="nt-modal-card wd-dialog" tabindex="-1">
+      <span class="wd-dialog-icon is-error" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
+      <h2 id="depositErrorTitle">Erro no Depósito</h2>
+      <p data-deposit-error-message></p>
+      <div class="wd-dialog-actions"><button type="button" class="wd-dialog-btn is-dark" data-close-modal>OK</button></div>
+    </div>
+  </div>
+</section>

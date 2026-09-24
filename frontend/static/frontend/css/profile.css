@@ -1,0 +1,595 @@
+/**
+ * New Tractors — Aba Perfil (/my).
+ */
+
+.profile {
+  padding-bottom: 8px;
+}
+
+.profile-hero {
+  height: 204px;
+}
+
+/* =========================================
+   CARD DA CONTA
+   ========================================= */
+.profile-card {
+  position: relative;
+  margin: -54px 16px 0;
+  padding: 22px 18px 18px;
+  border: 1px solid rgba(16, 46, 38, 0.06);
+  border-radius: 26px;
+  background-color: var(--warm-white);
+  box-shadow: 0 14px 34px rgba(16, 46, 38, 0.12);
+}
+
+.profile-id {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.profile-avatar {
+  position: relative;
+  flex-shrink: 0;
+  width: 62px;
+  height: 62px;
+}
+
+.profile-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 3px solid #FFFFFF;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(16, 46, 38, 0.1), 0 4px 10px rgba(16, 46, 38, 0.15);
+  object-fit: cover;
+}
+
+.profile-avatar-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  border: 2px solid #FFFFFF;
+  border-radius: 50%;
+  background-color: #2E8B57;
+  color: #FFFFFF;
+}
+
+.profile-avatar-badge svg {
+  width: 11px;
+  height: 11px;
+}
+
+.profile-id-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-id-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.profile-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 15px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6D7B72;
+}
+
+.profile-status {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  max-width: 50%;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background-color: #E6F4EA;
+  color: #2F7A4E;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 15px;
+}
+
+.profile-status::before {
+  content: "";
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #2F9A5E;
+}
+
+.profile-name {
+  margin-top: 4px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 27px;
+  color: var(--forest-950);
+  overflow-wrap: anywhere;
+}
+
+.profile-phone {
+  margin-top: 4px;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  color: #6D7B72;
+  white-space: nowrap;
+}
+
+.profile-contacts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(16, 46, 38, 0.07);
+}
+
+.profile-contact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 1px solid;
+  border-radius: 14px;
+  font: 800 14px var(--font-display);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.profile-contact svg {
+  width: 17px;
+  height: 17px;
+}
+
+.profile-contact-whatsapp {
+  border-color: #C4E7CD;
+  background-color: #EAF7ED;
+  color: #2E7D4F;
+}
+
+.profile-contact-telegram {
+  border-color: #C2DDEE;
+  background-color: #E7F2F9;
+  color: #2A6F9A;
+}
+
+/* =========================================
+   MINHA CARTEIRA
+   ========================================= */
+.profile-wallet {
+  margin: 16px 16px 0;
+  padding: 20px 18px;
+  border-radius: 26px;
+  background: radial-gradient(120% 80% at 90% 0%, #24573F 0%, rgba(36, 87, 63, 0) 60%),
+              linear-gradient(160deg, #1B4838 0%, #0F3025 100%);
+  box-shadow: 0 14px 34px rgba(16, 46, 38, 0.22);
+  color: #FFFFFF;
+}
+
+.profile-wallet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.profile-wallet-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.profile-wallet-head h2 svg {
+  width: 20px;
+  height: 20px;
+  color: var(--field-500);
+}
+
+.profile-eye {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+  cursor: pointer;
+}
+
+.profile-eye svg {
+  width: 19px;
+  height: 19px;
+}
+
+.profile-eye .eye-closed,
+.profile-wallet.is-masked .profile-eye .eye-open {
+  display: none;
+}
+
+.profile-wallet.is-masked .profile-eye .eye-closed {
+  display: block;
+}
+
+.profile-balance {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 18px;
+  background-color: #0E2A20;
+}
+
+.profile-balance + .profile-balance {
+  margin-top: 12px;
+}
+
+.profile-balance-value {
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 32px;
+}
+
+.profile-wallet.is-masked [data-wallet] {
+  filter: blur(9px);
+  user-select: none;
+}
+
+.profile-balance-note {
+  margin-top: 4px;
+  font-size: 12.5px;
+  line-height: 17px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.profile-wallet-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.profile-wallet-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 64px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background-color: rgba(255, 255, 255, 0.09);
+  color: #FFFFFF;
+  font: 800 14px var(--font-display);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.profile-wallet-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.profile-wallet-btn .icon-gold {
+  color: var(--harvest);
+}
+
+.profile-wallet-btn .icon-green {
+  color: var(--field-300);
+}
+
+.profile-wallet-btn.is-primary {
+  border-color: transparent;
+  background-color: #7DB548;
+  box-shadow: 0 8px 18px rgba(125, 181, 72, 0.3);
+  color: var(--forest-950);
+}
+
+/* =========================================
+   MENU FINANCEIRO
+   ========================================= */
+.profile-menu {
+  margin: 16px 16px 0;
+  overflow: hidden;
+  border: 1px solid rgba(16, 46, 38, 0.06);
+  border-radius: 24px;
+  background-color: var(--warm-white);
+  box-shadow: 0 8px 22px rgba(16, 46, 38, 0.06);
+}
+
+.profile-menu-title {
+  padding: 18px 20px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--forest-950);
+}
+
+.profile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px 18px 16px 20px;
+  border: none;
+  border-top: 1px solid rgba(16, 46, 38, 0.06);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.profile-menu-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+.profile-menu-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.profile-menu-icon.is-green {
+  background-color: #E9F3E6;
+  color: var(--forest-700);
+}
+
+.profile-menu-icon.is-gold {
+  background-color: #FCEFD9;
+  color: var(--warning);
+}
+
+.profile-menu-icon.is-gray {
+  background-color: #EEF1EE;
+  color: var(--forest-700);
+}
+
+.profile-menu-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.profile-menu-text strong {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 21px;
+  color: var(--forest-950);
+}
+
+.profile-menu-text small {
+  margin-top: 3px;
+  font-size: 13.5px;
+  line-height: 19px;
+  color: #6D7B72;
+}
+
+.profile-menu-badge {
+  padding: 2px 8px;
+  border: 1px solid #CFE6D6;
+  border-radius: 8px;
+  background-color: #E6F4EA;
+  color: #2F7A4E;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 16px;
+}
+
+.profile-menu-chevron {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: #7A857F;
+}
+
+/* =========================================
+   INSTALAR APP + SAIR
+   ========================================= */
+.profile-install {
+  margin: 20px 16px 0;
+  padding: 22px 20px 20px;
+  border-radius: 24px;
+  background: linear-gradient(160deg, #1B4838 0%, #0F3025 100%);
+  box-shadow: 0 14px 34px rgba(16, 46, 38, 0.2);
+  color: #FFFFFF;
+}
+
+.profile-install-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.profile-install-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(115, 169, 66, 0.3);
+  border-radius: 12px;
+  background-color: rgba(115, 169, 66, 0.15);
+  color: var(--field-500);
+}
+
+.profile-install-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.profile-install h2 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 22px;
+}
+
+.profile-install-head p {
+  margin-top: 4px;
+  font-size: 13.5px;
+  line-height: 19px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.profile-install-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 18px;
+  border: none;
+  border-radius: 14px;
+  background-color: #FFFFFF;
+  color: var(--forest-950);
+  font: 800 15px var(--font-display);
+  cursor: pointer;
+}
+
+.profile-install-btn svg {
+  width: 17px;
+  height: 17px;
+  color: var(--forest-700);
+}
+
+.profile-install-hint {
+  margin-top: 12px;
+  font-size: 12.5px;
+  line-height: 18px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.profile-logout-form {
+  margin: 14px 16px 8px;
+}
+
+.profile-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  border: 1px solid #F0CFCB;
+  border-radius: 16px;
+  background-color: var(--warm-white);
+  color: var(--danger);
+  font: 700 15px var(--font-display);
+  cursor: pointer;
+}
+
+.profile-logout svg {
+  width: 18px;
+  height: 18px;
+}
+
+.profile-contact:focus-visible,
+.profile-eye:focus-visible,
+.profile-wallet-btn:focus-visible,
+.profile-menu-item:focus-visible,
+.profile-install-btn:focus-visible,
+.profile-logout:focus-visible {
+  outline: 2px solid var(--forest-700);
+  outline-offset: 2px;
+}
+
+/* =========================================
+   DESKTOP: coluna central, como no site
+   ========================================= */
+@media (min-width: 992px) {
+  .profile {
+    max-width: 486px;
+    margin: 0 auto;
+    padding: 0 0 8px;
+  }
+
+  .profile .profile-hero {
+    height: 218px;
+    margin: 0 -16px;
+    border-radius: 0;
+  }
+
+  .profile .profile-hero img {
+    object-position: center 45%;
+  }
+
+  .profile-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: -58px 0 0;
+    padding: 18px 16px 18px 20px;
+  }
+
+  .profile-id {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .profile-id-top {
+    justify-content: flex-start;
+  }
+
+  .profile-kicker {
+    max-width: 70px;
+  }
+
+  .profile-contacts {
+    display: flex;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+
+  .profile-contact {
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 12px;
+    font-size: 13px;
+  }
+
+  .profile-wallet,
+  .profile-menu,
+  .profile-install,
+  .profile-logout-form {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}

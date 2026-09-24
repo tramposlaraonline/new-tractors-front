@@ -1,0 +1,15 @@
+{% load frontend_format %}
+{% for item in withdraw.recent %}
+  <li class="wd-recent-item">
+    <div>
+      <p class="wd-recent-title">Saque Pix</p>
+      <p class="wd-recent-date">{{ item.created_at|date:"d/m/Y H:i" }}</p>
+    </div>
+    <div class="wd-recent-right">
+      <p class="wd-recent-amount">- {{ item.amount|brl }}</p>
+      <span class="wd-status is-{{ item.tone }}">{{ item.status_label }}</span>
+    </div>
+  </li>
+{% empty %}
+  <li class="wd-recent-empty">Nenhum saque realizado ainda.</li>
+{% endfor %}

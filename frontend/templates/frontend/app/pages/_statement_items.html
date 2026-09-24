@@ -1,0 +1,16 @@
+{% load frontend_format %}
+{% for it in items %}
+  <li class="st-item">
+    <span class="st-icon is-{{ it.icon_tone }}">{{ it.icon|safe }}</span>
+    <div class="st-text">
+      <p class="st-title">{{ it.title }}</p>
+      <p class="st-meta">{{ it.created_at|day_label }} • {{ it.description }}</p>
+    </div>
+    <div class="st-right">
+      <p class="st-amount{% if it.amount < 0 %} is-neg{% endif %}">{{ it.amount|signed_brl }}</p>
+      <p class="st-status is-{{ it.status_tone }}">{{ it.status_label }}</p>
+    </div>
+  </li>
+{% empty %}
+  {% if first_page %}<li class="st-empty">Nenhuma movimentação por aqui ainda.</li>{% endif %}
+{% endfor %}

@@ -1,0 +1,12 @@
+{% load frontend_format %}
+{% for n in items %}
+  <li class="nf-item{% if not n.read %} is-unread{% endif %}">
+    <div class="nf-item-top">
+      <p class="nf-item-title">{{ n.title }}</p>
+      <span class="nf-item-time">{% if n.time_label %}{{ n.time_label }}{% else %}{{ n.created_at|ago }}{% endif %}</span>
+    </div>
+    <p class="nf-item-body">{{ n.body }}</p>
+  </li>
+{% empty %}
+  <li class="st-empty">Nenhuma notificação por enquanto.</li>
+{% endfor %}

@@ -1,0 +1,129 @@
+{% extends "frontend/auth/base_auth.html" %}
+
+{% block title %}Criar Conta • New Tractors{% endblock %}
+{% block meta_description %}Crie sua conta na New Tractors, plataforma de máquinas e equipamentos.{% endblock %}
+
+{% block auth_card %}
+  <div class="auth-card-register">
+    <div class="auth-card-header">
+      <h2 class="auth-title">Crie sua conta</h2>
+      <p class="auth-subtitle">Junte-se à plataforma de inovação em máquinas e equipamentos.</p>
+    </div>
+
+    <!-- Alerta de Erro Geral -->
+    <div id="generalAlert" class="auth-alert auth-alert-danger" role="alert" aria-live="polite"{% if not form.non_field_errors and not auth_lock_shown %} hidden{% endif %}>
+      {% if auth_lock_shown %}{{ auth_lock.message }}{% endif %}
+      {% for error in form.non_field_errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}
+    </div>
+
+    <form id="registerForm" method="post" action="{% url 'frontend:register' %}" novalidate>
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+      <!-- Campo Nome -->
+      <div class="auth-group">
+        <label for="fullName" class="auth-label">Nome Completo</label>
+        <div class="auth-input-wrapper">
+          <svg class="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <input id="fullName" name="full_name" type="text" autocomplete="name" autocapitalize="words"
+                 placeholder="Seu nome e sobrenome" class="auth-input" maxlength="150"
+                 value="{{ form.full_name.value|default_if_none:'' }}"
+                 {% if form.full_name.errors %}aria-invalid="true" aria-describedby="fullName-error"{% endif %}>
+        </div>
+        <div id="fullName-error" class="auth-field-error"{% if not form.full_name.errors %} hidden{% endif %}>{{ form.full_name.errors|first|default:'' }}</div>
+      </div>
+
+      <!-- Campo Telefone -->
+      <div class="auth-group">
+        <label for="phone" class="auth-label">Telefone Celular com DDD</label>
+        <div class="auth-input-wrapper">
+          <div class="auth-phone-prefix" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            <span>+55</span>
+          </div>
+          <input id="phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel-national"
+                 placeholder="(11) 98765-4321" class="auth-input has-prefix" maxlength="20"
+                 value="{{ form.phone.value|default_if_none:'' }}"
+                 {% if form.phone.errors %}aria-invalid="true" aria-describedby="phone-error"{% endif %}>
+        </div>
+        <div id="phone-error" class="auth-field-error"{% if not form.phone.errors %} hidden{% endif %}>{{ form.phone.errors|first|default:'' }}</div>
+      </div>
+
+      <!-- Campo Senha -->
+      <div class="auth-group">
+        <label for="password" class="auth-label">Senha de Acesso</label>
+        <div class="auth-input-wrapper">
+          <svg class="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input id="password" name="password" type="password" autocomplete="new-password"
+                 placeholder="Mínimo 6 caracteres" class="auth-input" maxlength="128"
+                 {% if form.password.errors %}aria-invalid="true" aria-describedby="password-error"{% endif %}>
+          <button type="button" class="auth-btn-toggle-pass" data-toggle-password="password" aria-label="Exibir senha" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <div id="password-error" class="auth-field-error"{% if not form.password.errors %} hidden{% endif %}>{{ form.password.errors|first|default:'' }}</div>
+      </div>
+
+      <!-- Campo Confirmar Senha -->
+      <div class="auth-group">
+        <label for="passwordConfirmation" class="auth-label">Confirmar Senha</label>
+        <div class="auth-input-wrapper">
+          <svg class="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input id="passwordConfirmation" name="password_confirmation" type="password" autocomplete="new-password"
+                 placeholder="Digite a mesma senha" class="auth-input" maxlength="128"
+                 {% if form.password_confirmation.errors %}aria-invalid="true" aria-describedby="confirmation-error"{% endif %}>
+          <button type="button" class="auth-btn-toggle-pass" data-toggle-password="passwordConfirmation" aria-label="Exibir senha" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <div id="confirmation-error" class="auth-field-error"{% if not form.password_confirmation.errors %} hidden{% endif %}>{{ form.password_confirmation.errors|first|default:'' }}</div>
+      </div>
+
+      <!-- Campo Código de Convite -->
+      <div class="auth-group">
+        <label for="invitationCode" class="auth-label">Código de Convite (Opcional)</label>
+        <div class="auth-input-wrapper">
+          <svg class="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <input id="invitationCode" name="invitation_code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"
+                 placeholder="Ex: NEW2026" class="auth-input auth-input-code" maxlength="32"
+                 value="{{ form.invitation_code.value|default_if_none:'' }}">
+        </div>
+      </div>
+
+      <!-- Botão Principal -->
+      <button type="submit" id="btn-register-submit" class="auth-btn-submit">
+        <span class="auth-btn-label">Concluir Cadastro</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </button>
+    </form>
+  </div>
+{% endblock %}
+
+{% block auth_modal %}
+  {% include "frontend/auth/_success_modal.html" %}
+{% endblock %}
