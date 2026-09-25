@@ -578,3 +578,46 @@
 @media (prefers-reduced-motion: reduce) {
   .balance-recalc-spinner { animation: none; }
 }
+
+/* =========================================
+   SALDO DE DEMONSTRAÇÃO (FRONTEND_DEMO_WITHDRAW)
+   "Calculando..." até o home.js revelar o valor; brilho curto a cada aumento; selo sempre visível.
+   ========================================= */
+.home-wallet-total .demo-calc {
+  font-size: 20px;
+}
+
+.demo-ticker.is-calculating .demo-value,
+.demo-ticker:not(.is-calculating) .demo-calc {
+  display: none;
+}
+
+.demo-ticker.is-up .demo-value {
+  display: inline-block;
+  animation: demoUp 0.9s ease-out;
+}
+
+@keyframes demoUp {
+  from { color: var(--field-300); transform: translateY(-2px); }
+  to { transform: none; }
+}
+
+.demo-seal {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 8px;
+  padding: 3px 9px;
+  border: 1px solid rgba(242, 212, 138, 0.45);
+  border-radius: 999px;
+  background-color: rgba(242, 212, 138, 0.12);
+  color: #F2D48A;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  letter-spacing: 0;
+  white-space: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-ticker.is-up .demo-value { animation: none; }
+}

@@ -1629,3 +1629,49 @@ class BalanceRecalcTests(TestCase):
         from django.conf import settings
         del settings.FRONTEND_BALANCE_RECALC
         self.assertNotContains(self.client.get(reverse("frontend:home")), "Recalculando saldo")
+
+
+# Saldo para saque de demonstração: contador no Início, sempre com o selo.
+DEMO_SEAL = "Demonstração — valores fictícios"
+
+
+@override_settings(FRONTEND_DEMO_WITHDRAW_PROVIDER="preview.demo_withdraw.state", FRONTEND_BALANCE_RECALC=False,
+                   FRONTEND_ONLY_HOME=False, FRONTEND_WALLET_PROVIDER="frontend.tests.fake_wallet_distinct")
+class DemoWithdrawHomeTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username="11987654321", password="s3nha-forte")
+        self.client.force_login(self.user)
+
+    def test_withdraw_starts_calculating_at_200_with_seal(self):
+        for extra in ({}, SPA):
+            with self.subTest(spa=bool(extra)):
+                res = self.client.get(reverse("frontend:home"), **extra)
+                html = res.json()["html"] if extra else res.content.decode()
+                self.assertRegex(html, r'class="home-balance-value demo-ticker is-calculating" data-demo-withdraw '
+                                       r'data-cents="20000"\s+data-rate-cents-per-hour="5000">')
+                self.assertIn('<span class="demo-value">R$ 200,00</span>', html)
+                self.assertIn("Calculando...", html)
+                # Selo no saque e no patrimônio (que soma o saque de demonstração).
+                self.assertEqual(html.count(DEMO_SEAL), 2)
+                self.assertIn('<span class="demo-value">R$ 977,30</span>', html)  # 777,30 + 200,00
+                # Sem data-wallet: as respostas das ações não sobrescrevem o contador.
+                self.assertNotIn('data-wallet="withdraw_balance"', html)
+                self.assertNotIn('data-wallet="total_balance"', html)
+                self.assertNotIn("41,90", html)  # o saque do provider normal não aparece
+
+    @override_settings(FRONTEND_BALANCE_RECALC=True)
+    def test_with_recalc_total_keeps_the_message_and_withdraw_keeps_the_seal(self):
+        html = self.client.get(reverse("frontend:home")).content.decode()
+        self.assertEqual(html.count("Recalculando saldo..."), 2)
+        self.assertIn("data-demo-withdraw", html)
+        self.assertNotIn("data-demo-total", html)
+        self.assertEqual(html.count(DEMO_SEAL), 1)
+
+    @override_settings(FRONTEND_DEMO_WITHDRAW_PROVIDER=None)
+    def test_off_shows_the_normal_withdraw_and_saves_nothing(self):
+        from preview.models import DemoWithdrawBalance
+        html = self.client.get(reverse("frontend:home")).content.decode()
+        self.assertNotIn(DEMO_SEAL, html)
+        self.assertNotIn("data-demo-withdraw", html)
+        self.assertIn('data-wallet="withdraw_balance">R$ 41,90</p>', html)
+        self.assertFalse(DemoWithdrawBalance.objects.exists())

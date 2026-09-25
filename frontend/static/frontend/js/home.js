@@ -435,6 +435,75 @@
 
   document.addEventListener('app:page', applyBalanceVisibility);
 
+  // -----------------------------------------------------------------------
+  // Saldo para saque de DEMONSTRAÇÃO (FRONTEND_DEMO_WITHDRAW): "Calculando..." e depois sobe a cada 3s.
+  // O valor sai do tempo decorrido (não soma por tique), então fica certo mesmo com o timer atrasado em
+  // segundo plano. "Meu Patrimônio", se visível, = saldo para investir (data-invest-cents) + demonstração.
+  // -----------------------------------------------------------------------
+  var DEMO_TICK_MS = 3000;
+  var DEMO_CALC_MS = 1800;
+  var demoTimer = null;
+
+  function startDemoTicker() {
+    clearInterval(demoTimer);
+    demoTimer = null;
+    var withdraw = document.querySelector('[data-demo-withdraw]');
+    if (!withdraw) return;
+    var total = document.querySelector('[data-demo-total]');
+    var baseCents = parseInt(withdraw.getAttribute('data-cents'), 10) || 0;
+    var centsPerMs = (parseInt(withdraw.getAttribute('data-rate-cents-per-hour'), 10) || 0) / 3600000;
+    var t0 = performance.now();
+    var last = null;
+
+    function show(el, cents, grew) {
+      el.querySelector('.demo-value').textContent = brlCents(cents);
+      if (!grew) return;
+      el.classList.remove('is-up');
+      void el.offsetWidth; // reinicia a animação de "subiu"
+      el.classList.add('is-up');
+    }
+
+    function render() {
+      var cents = Math.floor(baseCents + centsPerMs * (performance.now() - t0));
+      if (cents === last) return;
+      var grew = last !== null;
+      last = cents;
+      show(withdraw, cents, grew);
+      var home = document.querySelector('[data-invest-cents]');
+      if (total && home) show(total, (parseInt(home.getAttribute('data-invest-cents'), 10) || 0) + cents, grew);
+    }
+
+    // "Calculando..." só termina com o card à vista: com um aviso por cima (ex.: "Bem-vindo", que abre a cada
+    // carga completa), espera fechar e conta o tempo do "Calculando..." a partir daí.
+    function overlayOpen() { return !!document.querySelector('.wl-overlay.is-open'); }
+
+    function waitOverlay() {
+      if (!document.contains(withdraw)) return; // saiu do Início
+      if (overlayOpen()) { setTimeout(waitOverlay, 300); return; }
+      setTimeout(tryReveal, DEMO_CALC_MS);
+    }
+
+    function tryReveal() {
+      if (!document.contains(withdraw)) return;
+      if (overlayOpen()) { waitOverlay(); return; }
+      render();
+      withdraw.classList.remove('is-calculating');
+      if (total) total.classList.remove('is-calculating');
+      demoTimer = setInterval(function () {
+        if (!document.contains(withdraw)) { clearInterval(demoTimer); demoTimer = null; return; }
+        render();
+      }, DEMO_TICK_MS);
+    }
+
+    setTimeout(tryReveal, DEMO_CALC_MS);
+  }
+
+  // Carga inicial (o app.js já emitiu o app:page antes deste arquivo) e cada volta ao Início pelo SPA.
+  startDemoTicker();
+  document.addEventListener('app:page', function (e) {
+    if (e.detail && e.detail.tab === 'home') startDemoTicker();
+  });
+
   // Utilitários usados por outras telas (withdraw.js).
   window.NT = { postAction: postAction, openModal: openModal, closeModal: closeModal, newKey: newKey,
                 applyBalances: applyBalances, showError: showError };

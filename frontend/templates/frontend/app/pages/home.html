@@ -12,6 +12,10 @@
     <p class="home-wallet-label">Meu Patrimônio</p>
     {% if balance_recalc %}
       <p class="home-wallet-total" role="status">{% include "frontend/app/_balance_recalc.html" %}</p>
+    {% elif demo_withdraw %}
+      {# Inclui o saque de demonstração: sobe junto com ele e leva o mesmo selo. Sem data-wallet: o home.js não sobrescreve. #}
+      <p class="home-wallet-total demo-ticker is-calculating" data-demo-total>{% include "frontend/app/_demo_ticker.html" with value=demo_withdraw.total %}</p>
+      <p class="demo-seal">Demonstração — valores fictícios</p>
     {% else %}
       <p class="home-wallet-total" data-wallet="total_balance">{{ wallet.total_balance|brl }}</p>
     {% endif %}
@@ -39,7 +43,13 @@
     <div class="home-balance">
       <div class="home-balance-info">
         <p class="home-balance-label home-balance-label-withdraw">Saldo para saque</p>
-        <p class="home-balance-value" data-wallet="withdraw_balance">{{ wallet.withdraw_balance|brl }}</p>
+        {% if demo_withdraw %}
+          <p class="home-balance-value demo-ticker is-calculating" data-demo-withdraw data-cents="{{ demo_withdraw.cents }}"
+             data-rate-cents-per-hour="{{ demo_withdraw.rate_cents_per_hour }}">{% include "frontend/app/_demo_ticker.html" with value=demo_withdraw.balance %}</p>
+          <p class="demo-seal">Demonstração — valores fictícios</p>
+        {% else %}
+          <p class="home-balance-value" data-wallet="withdraw_balance">{{ wallet.withdraw_balance|brl }}</p>
+        {% endif %}
       </div>
       <span class="home-balance-action home-balance-action-withdraw" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">

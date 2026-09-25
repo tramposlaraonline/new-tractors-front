@@ -43,6 +43,19 @@ def get_wallet_summary(user):
     return {"invest_balance": invest, "withdraw_balance": withdraw, "total_balance": invest + withdraw}
 
 
+def get_demo_withdraw(user):
+    """Saldo para saque de DEMONSTRAÇÃO, ou None quando FRONTEND_DEMO_WITHDRAW_PROVIDER não está configurado.
+
+    O provider devolve {"balance": Decimal, "rate_per_hour": Decimal}; o Início mostra o valor subindo a cada
+    3s a partir daí, sempre com o selo "Demonstração — valores fictícios".
+    """
+    path = getattr(settings, "FRONTEND_DEMO_WITHDRAW_PROVIDER", None)
+    if not path:
+        return None
+    data = import_string(path)(user)
+    return {"balance": Decimal(data["balance"]), "rate_per_hour": Decimal(data["rate_per_hour"])}
+
+
 def default_products(user):
     from .catalog import PRODUCTS
     return PRODUCTS

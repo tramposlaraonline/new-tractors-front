@@ -26,7 +26,7 @@ from .channels import get_channels
 from .qr import pix_qr_data_uri, safe_image_src
 from .validators import PIX_KEY_TYPES, clean_cpf, clean_pix_key
 from .providers import (
-    get_checkin_state, get_header_state, get_products, get_profile_state, get_roulette_state, get_wallet_summary,
+    get_checkin_state, get_demo_withdraw, get_header_state, get_products, get_profile_state, get_roulette_state, get_wallet_summary,
     get_deposit_charge, get_deposit_state, get_notifications, get_purchases, get_team,
     get_withdraw_history,
     get_withdraw_state, run_action,
@@ -343,6 +343,12 @@ class HomeView(AppPageView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["wallet"] = get_wallet_summary(self.request.user)
+        demo = get_demo_withdraw(self.request.user)
+        if demo:
+            # Contador do home.js: parte do valor atual e sobe no ritmo informado (sempre com o selo de demonstração).
+            context["demo_withdraw"] = {"balance": demo["balance"], "cents": _cents(demo["balance"]),
+                                        "rate_cents_per_hour": _cents(demo["rate_per_hour"]),
+                                        "total": context["wallet"]["invest_balance"] + demo["balance"]}
         context["checkin"] = get_checkin_state(self.request.user)
         context["products"] = get_products(self.request.user)
         context["roulette"] = get_roulette_state(self.request.user)
