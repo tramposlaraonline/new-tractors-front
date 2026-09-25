@@ -1684,15 +1684,19 @@ class ChannelsAndWelcomeTests(TestCase):
 
 # Bloqueio temporário: só o Início (e as ações dele) responde; o resto é fechado por padrão no servidor.
 HOME_ONLY_BLOCKED_PAGES = [("frontend:team", {}), ("frontend:deposit", {}),
-                           ("frontend:deposit_payment", {"charge_id": "abc123"}), ("frontend:purchases", {}),
-                           ("frontend:profile", {}), ("frontend:statement_page", {}), ("frontend:withdraw", {}),
-                           ("frontend:withdraw_history", {})]
-HOME_ONLY_BLOCKED_ACTIONS = [("frontend:action_withdraw", {}), ("frontend:action_cpf", {}),
+                             ("frontend:deposit_payment", {"charge_id": "abc123"}), ("frontend:purchases", {}),
+                             ("frontend:profile", {}), ("frontend:statement_page", {})]
+# Abertas no bloqueio do Início: saque (tela, histórico e ações) e as telas do VIP.
+HOME_ONLY_OPEN_PAGES = [("frontend:withdraw", {}), ("frontend:withdraw_history", {}), ("frontend:vip", {})]
+HOME_ONLY_BLOCKED_ACTIONS = [("frontend:action_cpf", {}),
                              ("frontend:action_deposit", {}), ("frontend:action_deposit_status", {"charge_id": "abc123"}),
-                             ("frontend:action_pix_key", {}), ("frontend:action_password", {})]
+                             ("frontend:action_password", {})]
 HOME_ONLY_OPEN_ACTIONS = [("frontend:action_checkin", {}), ("frontend:action_bonus", {}),
-                          ("frontend:action_roulette", {}), ("frontend:action_recruit", {}),
-                          ("frontend:action_purchase", {"product_id": "t1"}), ("frontend:notifications_read", {})]
+                            ("frontend:action_roulette", {}), ("frontend:action_recruit", {}),
+                            ("frontend:action_purchase", {"product_id": "t1"}), ("frontend:notifications_read", {}),
+                            ("frontend:action_withdraw", {}), ("frontend:action_pix_key", {}),
+                            ("frontend:action_withdraw_queue", {}), ("frontend:action_vip", {}),
+                            ("frontend:action_vip_status", {"transaction_id": "tx-1"})]
 
 
 @override_settings(FRONTEND_ONLY_HOME=True)
@@ -1710,17 +1714,65 @@ class HomeOnlyTests(TestCase):
 
     def test_other_tabs_and_home_shortcuts_are_marked_locked(self):
         html = self.client.get(reverse("frontend:home")).content.decode()
-        # Navbar: as 4 abas fora o Início; menu lateral: "Depositar Saldo" + 4 itens; Início: Depositar, Sacar, Extrato.
+        # Navbar: as 4 abas fora o Início; menu lateral: "Depositar Saldo" + 4 itens; Início: Depositar, Extrato
+        # (o "Sacar" fica de fora de propósito — a tela /withdraw continua aberta).
         self.assertEqual(len(re.findall(r'class="app-tab[^"]*is-locked"', html)), 4)
         self.assertEqual(len(re.findall(r'class="app-side-link[^"]*is-locked"', html)), 4)
         self.assertIn('class="app-sidebar-deposit is-locked"', html)
-        self.assertEqual(len(re.findall(r'class="home-action[^"]*is-locked"', html)), 3)
+        self.assertEqual(len(re.findall(r'class="home-action[^"]*is-locked"', html)), 2)
         self.assertRegex(html, r'data-tab="home"\s+class="app-tab is-active"\s+aria-current="page">')
         self.assertNotRegex(html, r'data-tab="home"[^>]*data-locked')
-        # Links para áreas fechadas dentro dos modais do Início (depósito na ativação, "Ver Minhas Compras").
+        # Links para áreas fechadas dentro dos modais do Início (depósito na ação, "Ver Minhas Compras").
         self.assertEqual(html.count('is-locked-inline'), 3)
         # Cada elemento marcado abre o aviso (lock.js) e é anunciado como indisponível.
         self.assertEqual(html.count(" data-locked"), html.count('aria-disabled="true"'))
+
+    def test_sacar_shortcut_stays_clickable_under_the_lock(self):
+        html = self.client.get(reverse("frontend:home")).content.decode()
+
+        self.assertRegex(html, r'<a href="/withdraw" class="home-action" data-spa-link data-tab="profile">')
+        self.assertNotIn(f'<a href="{reverse("frontend:withdraw")}" class="home-action is-locked"', html)
+
+    def test_open_pages_answer_instead_of_redirecting_to_home(self):
+        for name, kwargs in HOME_ONLY_OPEN_PAGES:
+            for extra in ({}, SPA):
+                with self.subTest(page=name, spa=bool(extra)):
+                    res = self.client.get(reverse(name, kwargs=kwargs), **extra)
+                    self.assertEqual(res.status_code, 200)
+                    if extra:
+                        self.assertEqual(res.json()["ok"], True)
+
+    @override_settings(FRONTEND_WITHDRAW_PROVIDER="frontend.tests.fake_withdraw_state",
+                       FRONTEND_WALLET_PROVIDER="frontend.tests.fake_rich_wallet")
+    def test_withdraw_actions_are_not_refused_under_the_lock(self):
+        # A tela /withdraw fica aberta no bloqueio, então o fluxo inteiro precisa responder: sem isso o
+        # usuário abriria a tela e não conseguiria sacar nem cadastrar a chave Pix.
+        with mock.patch("frontend.views.run_action", return_value={"ok": False, "message": "regra"}) as run:
+            res_saque = self.client.post(reverse("frontend:action_withdraw"), {"amount": "45,25"},
+                                        HTTP_X_IDEMPOTENCY_KEY="key-12345678")
+            res_chave = self.client.post(reverse("frontend:action_pix_key"),
+                                        {"key_type": "cpf", "key": "529.982.247-25"})
+            res_fila = self.client.post(reverse("frontend:action_withdraw_queue"))
+
+        for res in (res_saque, res_chave, res_fila):
+            self.assertNotEqual(res.status_code, 503)
+        self.assertEqual(run.call_count, 2)  # saque e chave Pix chegam ao backend; a fila só lê
+
+    def test_vip_actions_are_not_refused_under_the_lock(self):
+        res_create = self.client.post(reverse("frontend:action_vip"))
+        res_status = self.client.post(reverse("frontend:action_vip_status", args=["tx-1"]))
+
+        self.assertEqual((res_create.status_code, res_status.status_code), (200, 404))
+
+    def test_vip_payment_screen_of_anOpenCharge_answers_under_the_lock(self):
+        from frontend.models import VipCharge
+        VipCharge.objects.create(user=self.user, transaction_id="tx-1", amount_cents=4790, br_code="pix-abc")
+
+        res = self.client.get(reverse("frontend:vip_payment", args=["tx-1"]))
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "R$ 47,90")
+
 
     def test_blocked_pages_redirect_to_home_on_full_load_and_spa(self):
         for name, kwargs in HOME_ONLY_BLOCKED_PAGES:

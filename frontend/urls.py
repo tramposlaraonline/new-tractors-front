@@ -43,7 +43,7 @@ urlpatterns = [
     # Tela do time (is_staff): prévia do cartão da fila, dentro do app e na aba Perfil.
     # "painel/" e não "admin/": o /admin/ é do Django admin, que vem antes no ROOT_URLCONF e engoliria o path.
     path("painel/fila", views.StaffWithdrawQueueView.as_view(
-        tab="profile", title="Fila de Saque",
+        tab="profile", title="Fila de Saque (time)",
         page_template="frontend/app/pages/admin_withdraw_queue.html"), name="admin_withdraw_queue"),
     # Ações do Início (POST + JSON).
     path("acoes/check-in", views.CheckinActionView.as_view(), name="action_checkin"),

@@ -431,6 +431,11 @@ def _cents(value):
 class WithdrawView(AppPageView):
     """Solicitar Saque Pix (/withdraw). Sub-tela do Perfil: a aba ativa continua sendo Perfil."""
 
+    # Bloqueio temporário (FRONTEND_ONLY_HOME): a tela de saque continua aberta — é por ela que o usuário
+    # sai da plataforma enquanto o resto está fechado. As ações do fluxo (/acoes/saque, /acoes/chave-pix e
+    # /acoes/saque/fila) também ficam abertas, senão a tela abriria e nenhuma ação responderia.
+    open_when_home_only = True
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         wallet = get_wallet_summary(self.request.user)
@@ -588,6 +593,8 @@ def parse_amount(raw):
 class WithdrawActionView(HomeActionView):
     """Validação no servidor antes de chamar o backend (o backend revalida de forma atômica)."""
 
+    open_when_home_only = True  # mesma exceção da tela /withdraw: sem ela, a tela aberta não saca nada
+
     def perform(self, request):
         user = request.user
         state = get_withdraw_state(user)
@@ -622,6 +629,8 @@ class WithdrawQueueView(HomeActionView):
     null = o saque saiu da fila (pago ou recusado): o withdraw.js recarrega a tela para mostrar o status.
     Dado inválido do backend cai no erro genérico do HomeActionView (500 + log) e a tela mantém o último valor.
     """
+
+    open_when_home_only = True  # o cartão da fila continua consultando na tela /withdraw, que fica aberta
 
     def perform(self, request):
         return 200, {"ok": True, "queue": withdraw_queue_json(get_withdraw_queue(request.user))}
@@ -760,6 +769,9 @@ class DepositStatusView(HomeActionView):
 
 
 class PixKeyActionView(HomeActionView):
+    # A tela /withdraw fica aberta no bloqueio, então a chave Pix (que ela exige para sacar) também.
+    open_when_home_only = True
+
     def perform(self, request):
         key_type = request.POST.get("key_type", "")
         if key_type not in PIX_KEY_TYPES:
@@ -883,6 +895,8 @@ class StatementPageView(AppPageView):
 class WithdrawHistoryView(AppPageView):
     """Histórico de Saques (/withdraw/history): sub-tela do Perfil."""
 
+    open_when_home_only = True  # link "Ver todos" da tela /withdraw, que fica aberta no bloqueio
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["history"] = get_withdraw_history(self.request.user)
@@ -981,6 +995,9 @@ class VipView(AppPageView):
     tab = "profile"
     title = "Plano VIP"
     page_template = "frontend/app/pages/vip.html"
+    # Bloqueio do Início: a tela do VIP continua aberta (como o /withdraw), e junto com ela as ações
+    # /acoes/vip e /acoes/vip/<id>/status — senão o botão de compra abriria a tela e não faria nada.
+    open_when_home_only = True
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -997,6 +1014,7 @@ class VipPaymentView(AppPageView):
     tab = "profile"
     title = "Pagamento VIP"
     page_template = "frontend/app/pages/vip_payment.html"
+    open_when_home_only = True  # é para onde o /vip leva depois de gerar a cobrança
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -1016,6 +1034,8 @@ class VipPaymentView(AppPageView):
 
 class VipActionView(HomeActionView):
     """POST /acoes/vip — cria a cobrança na Pixzy e redireciona para a tela de pagamento."""
+
+    open_when_home_only = True  # a tela /vip fica aberta no bloqueio, então a compra tem de responder
 
     def perform(self, request):
         # Já é VIP?
@@ -1056,6 +1076,8 @@ class VipActionView(HomeActionView):
 
 class VipStatusView(HomeActionView):
     """POST /acoes/vip/<transaction_id>/status — polling da tela de pagamento."""
+
+    open_when_home_only = True  # mesma exceção da tela /vip/pagamento, que continua aberta no bloqueio
 
     def perform(self, request, transaction_id):
         charge = VipCharge.objects.filter(user=request.user, transaction_id=transaction_id).first()
