@@ -62,7 +62,6 @@ urlpatterns = [
     path("acoes/processo-seletivo", views.RecruitActionView.as_view(), name="action_recruit"),
     path("acoes/equipamentos/<slug:product_id>/ativar", views.PurchaseActionView.as_view(), name="action_purchase"),
     # Logout só por POST (padrão do Django), com CSRF.
-    path("vip", app_page("vip", "Plano VIP"), name="vip"),
     path("logout", LogoutView.as_view(next_page="frontend:login"), name="logout"),
     # dentro de urlpatterns:
 
