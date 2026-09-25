@@ -56,11 +56,21 @@ Reconstrução do front-end do new-tractors.com a partir do HTML salvo do login 
    - Notificações (sino): `FRONTEND_NOTIFICATIONS_PROVIDER(user, offset, limit)` e `FRONTEND_NOTIFICATIONS_READ_ACTION(user)`.
    - Extrato consolidado (`/extrato`): `FRONTEND_STATEMENT_SUMMARY_PROVIDER(user)` (totais e contagem por filtro).
    - Histórico de saques (`/withdraw/history`): `FRONTEND_WITHDRAW_HISTORY_PROVIDER(user)`.
-   - Fila de saque (cartão no `/withdraw`, consultado a cada 15s em `/acoes/saque/fila`):
-     `FRONTEND_WITHDRAW_QUEUE_PROVIDER(user)` → `None` ou `{"position", "amount", "requested_at", "entry_position"?}`.
-     **A posição tem que ser calculada na mesma base que registra os pagamentos** (1 + saques não pagos criados
-     antes deste) e só cai quando um saque da frente é pago. Nunca um número fixo, estimado ou inflado.
-     Sem a setting, o cartão não aparece. Posição inválida esconde o cartão e vai para o log.
+    - Fila de saque (cartão no `/withdraw`, consultado a cada 15s em `/acoes/saque/fila`):
+      `FRONTEND_WITHDRAW_QUEUE_PROVIDER(user)` → `None` ou `{"position", "amount", "requested_at", "entry_position"?}`.
+      **A posição tem que ser calculada na mesma base que registra os pagamentos** (1 + saques não pagos criados
+      antes deste) e só cai quando um saque da frente é pago. Nunca um número fixo, estimado ou inflado.
+      Sem a setting, o cartão não aparece. Posição inválida esconde o cartão e vai para o log.
+      `FRONTEND_WITHDRAW_QUEUE_DEMO=1` põe no cartão o selo "Demonstração - fila fictícia, sem pagamento real"
+      (ligado no preview; num backend que paga de verdade, fica desligado).
+    - Prévia da fila para o time (`/painel/fila`, só `is_staff`): desenha o mesmo cartão com o que o provider
+      devolve para o usuário escolhido (`?user=<id>`; sem o parâmetro, o próprio staff), mais os dados crus do
+      provider. É conferência de tela — não simula fila nem inventa posição, e o cartão entra sem
+      `data-withdraw-queue`, então o app.js não consulta `/acoes/saque/fila` ali. Anonymous vai para o login,
+      usuário comum recebe 403. O path é `painel/`, não `admin/`, porque o `/admin/` é do Django admin.
+      O atalho "Sacar" do Início (`frontend/app/pages/home.html`) aponta para essa página quando o usuário é
+      staff, e continua no `/withdraw` para todo mundo — sem `data-spa-link`, porque a página do time é fora da
+      casca do app.
    - Check-in: `FRONTEND_CHECKIN_ACTION` pode devolver `amount` → abre o modal "Check-in realizado!".
    - Processo seletivo: `FRONTEND_RECRUIT_ACTION(user, message)`.
    - **Links de suporte e comunidade: Django admin → "Links de atendimento e comunidade"** (registro único,
@@ -175,4 +185,34 @@ python manage.py createsuperuser   # username = celular só com dígitos, ex. 11
 python manage.py runserver
 python manage.py test frontend
 ```
+
 A pasta `preview/` e o `manage.py` servem só para isso — não vão para o projeto real.
+
+### Protótipo da fila, só no front-end
+
+`frontend/static/frontend/prototype/fila-saque.html` (abra direto no navegador, ou em
+`/static/frontend/prototype/fila-saque.html` no runserver) monta o cartão da fila **sem backend nenhum**:
+os números são fictícios e vêm do `fila-saque.js`, que replica as contas de `frontend/providers.py` e a
+animação de `withdraw.js` para mostrar o desenho da tela para alguém. Botões de cena: fim da fila, meio da
+fila, primeiro da fila e "saiu da fila", mais um botão que simula a fila andando.
+
+Serve só para apresentação/ajuste de CSS. Para conferir a tela com dados de verdade, o time usa
+`/painel/fila` (ver acima). O protótipo não entra em nenhum fluxo do app e a tela que ele espelha
+(`_withdraw_queue.html`) tem que ser alterada junto quando o cartão mudar.
+
+### Encher a fila de saque de demonstração
+
+```
+python manage.py seed_queue --count 3000        # opcional: --window, --min-amount, --max-amount, --seed
+```
+
+Cria 3.000 usuários sem senha (`demo-fila-00000`...) e um saque pendente para cada um
+(`preview.DemoQueuedWithdrawal`). Depois de semear, o próximo saque do usuário entra como 3.001º: a posição
+é a contagem dos pedidos que já existiam na base, a mesma conta que o backend usaria com pagamentos reais.
+Roda de novo reconstrói a fila semeada do zero.
+
+O que segura a fila (e não um número fixo) é o teto de liquidação do preview
+(`preview/demo_data.py: DAILY_PAYOUT_LIMIT`, R$ 3.000/dia): a fila liquida um saque a cada 30s, na ordem de
+chegada, até o teto do dia. Passado o teto, a fila espera o dia seguinte — e um reinício do servidor não
+derruba a fila inteira, porque o relógio da liquidação fica em `settled_at`. Sem esse teto, qualquer pedido
+com mais de 30s de idade seria pago assim que a tela abrisse, e a fila semeada não duraria nada.

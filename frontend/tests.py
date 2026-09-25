@@ -476,6 +476,33 @@ class HomeAndHeaderTests(TestCase):
             self.client.get(reverse("frontend:team"), **SPA)
         provider.assert_not_called()
 
+    def test_sacar_shortcut_of_a_regular_user_opens_the_withdraw_screen(self):
+        html = self.client.get(reverse("frontend:home")).content.decode()
+
+        self.assertIn(f'<a href="{reverse("frontend:withdraw")}" class="home-action" data-spa-link '
+                      'data-tab="profile">', html)
+        self.assertNotIn(reverse("frontend:admin_withdraw_queue"), html)
+
+    def test_sacar_shortcut_of_staff_opens_the_queue_preview_outside_the_app(self):
+        self.user.is_staff = True
+        self.user.save(update_fields=["is_staff"])
+        html = self.client.get(reverse("frontend:home")).content.decode()
+
+        # Página do time: navegação de verdade (sem data-spa-link, que é da casca do app).
+        self.assertIn(f'<a href="{reverse("frontend:admin_withdraw_queue")}" class="home-action">', html)
+        self.assertIn("Fila de saque (time)", html)
+        self.assertNotIn(reverse("frontend:withdraw") + '" class="home-action"', html)
+        # O atalho também vem certaininho no fragmento que a SPA troca.
+        self.assertIn(reverse("frontend:admin_withdraw_queue"), self.client.get(reverse("frontend:home"), **SPA).json()["html"])
+
+    @override_settings(FRONTEND_ONLY_HOME=True)
+    def test_sacar_shortcut_of_staff_keeps_the_area_locked(self):
+        self.user.is_staff = True
+        self.user.save(update_fields=["is_staff"])
+
+        self.assertContains(self.client.get(reverse("frontend:home")),
+                            f'href="{reverse("frontend:admin_withdraw_queue")}" class="home-action is-locked"')
+
 def fake_checkin_done(user):
     return {"done_today": True}
 
@@ -911,6 +938,14 @@ class WithdrawQueueTests(TestCase):
     def test_page_enteredAsFirst_explainsFullBar(self):
         self.assertIn("Você entrou na fila como o primeiro.", self.page())
 
+    @override_settings(FRONTEND_WITHDRAW_QUEUE_DEMO=True)
+    def test_page_withDemoQueue_saysItIsADemonstration(self):
+        self.assertIn("Demonstração - fila fictícia, sem pagamento real", self.page())
+
+    @override_settings(FRONTEND_WITHDRAW_QUEUE_DEMO=False)
+    def test_page_withRealQueue_hasNoDemoSeal(self):
+        self.assertNotIn("Demonstração - fila fictícia", self.page())
+
     def test_invalidBackendData_hidesCardAndKeepsPageUsable(self):
         for provider in ("fake_queue_position_zero", "fake_queue_position_text", "fake_queue_went_backwards"):
             with self.subTest(provider=provider), override_settings(
@@ -950,6 +985,67 @@ class WithdrawQueueTests(TestCase):
         res = self.client.post(self.queue_url)
 
         self.assertEqual((res.status_code, res.json()["locked"]), (503, True))
+
+
+@override_settings(FRONTEND_WITHDRAW_QUEUE_PROVIDER="frontend.tests.fake_queue_third_of_seven")
+class StaffQueuePreviewTests(TestCase):
+    """Prévia do cartão da fila (/admin/fila): só para is_staff, e sem a consulta automática do app."""
+
+    url = reverse("frontend:admin_withdraw_queue")
+
+    def setUp(self):
+        User = get_user_model()
+        self.staff = User.objects.create_user(username="82991028511", password="x", is_staff=True)
+        self.client_user = User.objects.create_user(username="82991028522", password="x")
+        self.client.force_login(self.staff)
+
+    def test_staff_seesTheCardAsTheUserSeesIt(self):
+        html = self.client.get(self.url).content.decode()
+
+        for marker in ("Uso interno (is_staff)", "Seu saque está na fila", "data-queue-position>3<",
+                       "2 pessoas na sua frente", "4 de 6 saques que estavam na sua frente já saíram da fila.",
+                       "R$ 45,25", "25/09 às 14:32"):
+            self.assertIn(marker, html)
+        # A prévia é estática: sem data-withdraw-queue o withdraw.js não consulta /acoes/saque/fila.
+        self.assertNotIn("data-withdraw-queue", html)
+
+    def test_staff_canPreviewAnotherUserById(self):
+        html = self.client.get(self.url, {"user": self.client_user.pk}).content.decode()
+
+        self.assertIn(f"Usuário <strong>{self.client_user.username}</strong>", html)
+        self.assertIn("data-queue-position>3<", html)
+
+    def test_unknownUser_isNotFound(self):
+        for raw in ("999999", "abc"):
+            with self.subTest(user=raw):
+                self.assertEqual(self.client.get(self.url, {"user": raw}).status_code, 404)
+
+    @override_settings(FRONTEND_WITHDRAW_QUEUE_PROVIDER="frontend.tests.fake_queue_none")
+    def test_userWithoutPendingWithdrawal_saysThereIsNoCard(self):
+        html = self.client.get(self.url).content.decode()
+
+        self.assertNotIn("Seu saque está na fila", html)
+        self.assertIn("não tem saque aguardando", html)
+
+    @override_settings(FRONTEND_WITHDRAW_QUEUE_PROVIDER="frontend.tests.fake_queue_position_zero")
+    def test_invalidBackendData_saysThereIsNoCardAndKeepsThePageUsable(self):
+        with self.assertLogs("frontend.views", level="ERROR"):
+            html = self.client.get(self.url).content.decode()
+
+        self.assertNotIn("data-queue-position", html)
+        self.assertIn("Uso interno (is_staff)", html)
+
+    def test_nonStaffIsForbidden(self):
+        self.client.force_login(self.client_user)
+
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+
+    def test_anonymousGoesToLogin(self):
+        self.client.logout()
+        res = self.client.get(self.url)
+
+        self.assertEqual(res.status_code, 302)
+        self.assertIn(reverse("frontend:login"), res["Location"])
 
 
 GENERIC_ERROR_TEXT = "Não foi possível concluir agora. Tente novamente em instantes."

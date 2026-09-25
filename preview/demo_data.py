@@ -9,6 +9,7 @@ from collections import namedtuple
 from datetime import timedelta
 from decimal import Decimal
 
+from django.db.models import Sum
 from django.utils import timezone
 
 from frontend.catalog import PRODUCTS
@@ -145,6 +146,8 @@ def profile_state(user):
 
 
 REVIEW_SECONDS = 30  # demo: a fila paga um saque a cada 30s, na ordem de chegada
+DAILY_PAYOUT_LIMIT = Decimal("3000.00")  # demo: teto de liquidação por dia. É ele que segura uma fila grande:
+# sem um limite, qualquer pedido com mais de REVIEW_SECONDS de idade seria pago assim que a tela abrisse.
 _payout = {"last_at": None}  # quando o último saque da fila foi pago (a fila semeada guarda o seu em settled_at)
 
 # Um item da fila: "memory" é o dicionário do saque em memória (preview) e "pk" a linha da fila semeada
@@ -176,29 +179,49 @@ def _last_paid_at():
     return max((at for at in (_payout["last_at"], from_db) if at is not None), default=None)
 
 
+def _paid_today(start, end):
+    """Quanto a fila já liquidou hoje (na base e em memória), para não estourar o limite diário."""
+    total = DemoQueuedWithdrawal.objects.filter(status="paid", settled_at__gte=start, settled_at__lt=end)\
+        .aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    return total + sum((w["amount"] for s in _state.values() for w in s.get("withdrawals", ())
+                        if w["status"] == "paid" and w.get("settled_at") and start <= w["settled_at"] < end),
+                       Decimal("0"))
+
+
 def _settle_queue():
-    """Paga a fila em ordem: cada saque sai REVIEW_SECONDS depois do anterior (ou do próprio pedido, se chegou depois)."""
+    """Paga a fila em ordem: cada saque sai REVIEW_SECONDS depois do anterior (ou do próprio pedido, se chegou
+    depois), enquanto couber no limite diário de liquidação. Devolve o que sobrou na fila, para quem só queria
+    a posição não ler a fila toda de novo."""
     now = timezone.now()
+    day_start = timezone.localtime(now).replace(hour=0, minute=0, second=0, microsecond=0)
+    budget = DAILY_PAYOUT_LIMIT - _paid_today(day_start, day_start + timedelta(days=1))
     last = _last_paid_at()
-    for row in _pending():
+    rows = _pending()
+    paid = 0
+    for row in rows:
+        if row.amount > budget:
+            break  # limite do dia acabou: a fila só anda amanhã
         paid_at = max(row.created_at, last) + timedelta(seconds=REVIEW_SECONDS) if last else \
             row.created_at + timedelta(seconds=REVIEW_SECONDS)
         if paid_at > now:
             break
+        budget -= row.amount
+        paid += 1
         if row.pk is not None:
             DemoQueuedWithdrawal.objects.filter(pk=row.pk).update(status="paid", settled_at=paid_at)
         else:
             row.memory["status"] = "paid"
+            row.memory["settled_at"] = paid_at
             if row.memory.get("ledger"):
                 row.memory["ledger"].update(status="completed", description="Liquidação efetuada via Banco Central")
         _payout["last_at"] = last = paid_at
+    return rows[paid:]
 
 
 def withdraw_queue(user):
     """FRONTEND_WITHDRAW_QUEUE_PROVIDER do preview: posição contada na fila acima, nunca inventada."""
     with _lock:
-        _settle_queue()
-        for index, row in enumerate(_pending()):
+        for index, row in enumerate(_settle_queue()):
             if row.uid == user.pk:
                 return {"position": index + 1, "amount": row.amount, "requested_at": row.created_at,
                         "entry_position": row.memory.get("entry_position") if row.memory else None}

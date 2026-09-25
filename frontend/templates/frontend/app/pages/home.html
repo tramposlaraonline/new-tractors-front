@@ -69,11 +69,17 @@
       </span>
       <span class="home-action-text"><strong>Depositar</strong><small>Via Pix rápido</small></span>
     </a>
+    {# Atalho "Sacar". Para o time (is_staff) abre a prévia do cartão da fila (/painel/fila): essa página #}
+    {# fica fora da casca do app, então não leva data-spa-link — é navegação de verdade. #}
+    {% if user.is_staff %}
+    <a href="{% url 'frontend:admin_withdraw_queue' %}" class="home-action{% if home_only %} is-locked{% endif %}"{% if home_only %} data-locked aria-disabled="true"{% endif %}>
+    {% else %}
     <a href="{% url 'frontend:withdraw' %}" class="home-action{% if home_only %} is-locked{% endif %}" data-spa-link data-tab="profile"{% if home_only %} data-locked aria-disabled="true"{% endif %}>
+    {% endif %}
       <span class="home-action-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4"/><path d="M12 16V8"/></svg>
       </span>
-      <span class="home-action-text"><strong>Sacar</strong><small>Chave Pix</small></span>
+      <span class="home-action-text"><strong>Sacar</strong><small>{% if user.is_staff %}Fila de saque (time){% else %}Chave Pix{% endif %}</small></span>
     </a>
     <button type="button" class="home-action{% if home_only %} is-locked{% endif %}" data-open-statement="all"{% if home_only %} data-locked aria-disabled="true"{% endif %}>
       <span class="home-action-icon" aria-hidden="true">

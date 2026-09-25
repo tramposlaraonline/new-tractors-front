@@ -1,8 +1,10 @@
 {% load frontend_format %}
 {# Cartão da fila de saque (só aparece com FRONTEND_WITHDRAW_QUEUE_PROVIDER e um saque aguardando). #}
 {# Posição e barra vêm do backend; o withdraw.js consulta /acoes/saque/fila e anima quando a fila anda. #}
+{# preview=True (tela do time, /admin/fila) desenha o cartão sem data-withdraw-queue: sem esse atributo #}
+{# o withdraw.js não polla, e a prévia não vira uma tela "ao vivo" sobre o usuário errado. #}
 {% if queue %}
-<section class="wq" data-withdraw-queue data-queue-url="{% url 'frontend:action_withdraw_queue' %}"
+<section class="wq"{% if not preview %} data-withdraw-queue data-queue-url="{% url 'frontend:action_withdraw_queue' %}"{% endif %}
          data-position="{{ queue.position }}" aria-labelledby="withdrawQueueTitle">
   <div class="wq-head">
     <span class="wq-live" aria-hidden="true"></span>
@@ -45,6 +47,7 @@
     <span data-queue-updated>Atualizado agora</span>
     <span class="wq-foot-note">A posição atualiza sozinha e só anda quando um saque à sua frente é pago.</span>
   </p>
+  {% if queue.demo %}<p class="demo-seal">Demonstração - fila fictícia, sem pagamento real</p>{% endif %}
   <p class="visually-hidden" aria-live="polite" data-queue-announce></p>
 </section>
 {% endif %}

@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, get_user_model, login, password_validation
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import LoginView as DjangoLoginView, RedirectURLMixin, redirect_to_login
 from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.template.loader import render_to_string
@@ -620,6 +620,48 @@ class WithdrawQueueView(HomeActionView):
 
     def perform(self, request):
         return 200, {"ok": True, "queue": withdraw_queue_json(get_withdraw_queue(request.user))}
+
+
+class StaffWithdrawQueueView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    """Prévia do cartão da fila de saque (/painel/fila), só para o time (is_staff).
+
+    Desenha o cartão exatamente como o usuário vê, com o que o provider devolve para o usuário escolhido
+    (?user=<id>; sem o parâmetro, o próprio staff). É conferência de tela, não simulação: a posição
+    continua vindo de FRONTEND_WITHDRAW_QUEUE_PROVIDER, e um usuário sem saque pendente não tem cartão
+    nenhum — a página avisa em vez de inventar posição.
+
+    O cartão entra com preview=True, sem `data-withdraw-queue`: assim o withdraw.js não polla /acoes/saque/fila
+    (que sempre responderia sobre o staff logado, não sobre o usuário da prévia).
+    """
+    template_name = "frontend/admin_withdraw_queue.html"
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def get_target_user(self):
+        raw = self.request.GET.get("user", "").strip()
+        if not raw:
+            return self.request.user
+        if not raw.isdigit():
+            raise Http404("Usuário não encontrado.")
+        target = get_user_model().objects.filter(pk=int(raw)).first()
+        if target is None:
+            raise Http404("Usuário não encontrado.")
+        return target
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        target = self.get_target_user()
+        display = user_display(target)
+        context.update({
+            "queue": queue_for_page(target),
+            "preview": True,
+            "target_id": target.pk,
+            "target_username": target.get_username(),
+            "target_name": display["user_name"],
+            "queue_provider": getattr(settings, "FRONTEND_WITHDRAW_QUEUE_PROVIDER", None),
+        })
+        return context
 
 
 # =========================================================================

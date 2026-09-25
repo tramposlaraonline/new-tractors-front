@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Protótipo — fila de saque (só front-end, sem backend)</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/app.css">
+  <link rel="stylesheet" href="../css/withdraw.css">
+  <style>
+    /* Só o que é do protótipo: o aviso de dados fictícios e os controles de cena. O cartão em si é o
+       mesmo da tela real, com o CSS de produção. */
+    body { padding-bottom: 48px; }
+
+    .pt-warn {
+      padding: 14px 16px;
+      background: #7A2B22;
+      color: #FFE9E4;
+      font-size: 14px;
+      line-height: 20px;
+      text-align: center;
+    }
+
+    .pt-warn strong { display: block; font-size: 15px; }
+
+    .pt-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-width: 526px;
+      margin: 16px auto 0;
+      padding: 0 16px;
+    }
+
+    .pt-btn {
+      padding: 9px 14px;
+      border: 1px solid rgba(16, 46, 38, 0.12);
+      border-radius: 999px;
+      background: var(--warm-white);
+      color: var(--forest-950);
+      font: 700 13px var(--font-sans);
+      cursor: pointer;
+    }
+
+    .pt-btn.is-on {
+      border-color: var(--forest-700);
+      background: #E8F0E9;
+    }
+
+    .pt-note {
+      max-width: 526px;
+      margin: 8px auto 0;
+      padding: 0 16px;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 18px;
+    }
+  </style>
+</head>
+<body>
+  <p class="pt-warn">
+    <strong>Protótipo de tela — dados fictícios, sem backend</strong>
+    A fila abaixo é montada por <code>fila-saque.js</code>, no navegador. Não há servidor, banco nem pagamento
+    por trás: é só para mostrar o desenho do cartão. No app de verdade, a posição vem de
+    <code>/acoes/saque/fila</code> (ver <code>_withdraw_queue.html</code> e <code>providers.py</code>).
+  </p>
+
+  <div class="pt-bar" data-scenes></div>
+
+  <main class="wd">
+    <div data-queue-slot></div>
+  </main>
+
+  <p class="pt-note">
+    O cartão espelha <code>frontend/templates/frontend/app/pages/_withdraw_queue.html</code>: se um dos dois
+    mudar, o outro tem que mudar junto.
+  </p>
+
+  <script src="fila-saque.js"></script>
+</body>
+</html>

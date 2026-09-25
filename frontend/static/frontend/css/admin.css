@@ -1,0 +1,145 @@
+/**
+ * New Tractors — telas internas do time (is_staff). Fora da casca do app: sem navbar, sem SPA.
+ */
+
+.aq {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 26px 16px 48px;
+}
+
+.aq-kicker {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--harvest);
+}
+
+.aq-title {
+  margin-top: 4px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 800;
+  color: var(--forest-950);
+}
+
+.aq-note {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 20px;
+}
+
+.aq-note code {
+  font-size: 12.5px;
+}
+
+/* Escolha do usuário whose card is previewed (?user=<id>). */
+.aq-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(16, 46, 38, 0.08);
+  border-radius: 18px;
+  background-color: var(--warm-white);
+}
+
+.aq-form label {
+  font-size: 13px;
+  color: #6D7B72;
+}
+
+.aq-form input {
+  width: 108px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1.5px solid #D9D5C9;
+  border-radius: 12px;
+  background-color: #F6F3EB;
+  color: var(--forest-950);
+  font: 700 14px var(--font-sans);
+}
+
+.aq-form input:focus-visible {
+  border-color: #5E9B38;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(94, 155, 56, 0.15);
+}
+
+.aq-btn {
+  height: 38px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1A4A38 0%, #0F3025 100%);
+  color: #FFFFFF;
+  font: 800 14px var(--font-display);
+  cursor: pointer;
+}
+
+.aq-target {
+  margin: 8px 2px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.aq-target strong {
+  color: var(--forest-950);
+}
+
+.aq-target a {
+  color: #2F7A4E;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.aq-target a:hover {
+  text-decoration: underline;
+}
+
+/* Sem fila: o app esconde o cartão, a página avisa em vez de mostrar posição inventada. */
+.aq-empty {
+  margin-top: 16px;
+  padding: 22px 20px;
+  border: 1px dashed rgba(16, 46, 38, 0.18);
+  border-radius: 26px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+}
+
+/* O que o provider devolveu, para conferir sem abrir o log. */
+.aq-data {
+  margin-top: 16px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background-color: #F7F4EC;
+  font-size: 13.5px;
+  line-height: 20px;
+}
+
+.aq-data > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aq-data > div + div {
+  margin-top: 6px;
+}
+
+.aq-data dt {
+  color: #6D7B72;
+}
+
+.aq-data dd {
+  color: var(--forest-950);
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}

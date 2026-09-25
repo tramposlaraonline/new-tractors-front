@@ -40,6 +40,9 @@ urlpatterns = [
         name="withdraw_history"),
     path("withdraw", views.WithdrawView.as_view(tab="profile", title="Solicitar Saque Pix",
                                                 page_template="frontend/app/pages/withdraw.html"), name="withdraw"),
+    # Tela do time (is_staff): prévia do cartão da fila, fora da casca do app e da navbar.
+    # "painel/" e não "admin/": o /admin/ é do Django admin, que vem antes no ROOT_URLCONF e engoliria o path.
+    path("painel/fila", views.StaffWithdrawQueueView.as_view(), name="admin_withdraw_queue"),
     # Ações do Início (POST + JSON).
     path("acoes/check-in", views.CheckinActionView.as_view(), name="action_checkin"),
     path("acoes/bonus", views.BonusActionView.as_view(), name="action_bonus"),

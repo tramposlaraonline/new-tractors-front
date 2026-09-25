@@ -165,4 +165,5 @@ FRONTEND_RECRUIT_ACTION = "preview.demo_data.recruit"
 # para mostrar. No projeto real, apontar para a função que calcula a posição na base de pagamentos (ver README).
 if not ON_RENDER:
     FRONTEND_WITHDRAW_QUEUE_PROVIDER = "preview.demo_data.withdraw_queue"
+    FRONTEND_WITHDRAW_QUEUE_DEMO = True  # selo "Demonstração" no cartão da fila: aqui ninguém é pago de verdade
 # Links de suporte/comunidade: editar no Django admin (/admin/ → "Links de atendimento e comunidade").
