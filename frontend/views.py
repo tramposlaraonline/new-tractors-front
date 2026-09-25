@@ -105,7 +105,7 @@ def auth_locked():
 
 
 def login_autocreate_enabled():
-    # TESTE LOCAL apenas: preview/settings.py só liga isto fora do Render e sob env explícita.
+    # Ligado em preview/settings.py pela env FRONTEND_LOGIN_AUTOCREATE=1 (local ou Render).
     return getattr(settings, "FRONTEND_LOGIN_AUTOCREATE", False)
 
 
@@ -171,10 +171,10 @@ class LoginView(AuthLockMixin, DjangoLoginView):
         return super().form_invalid(form)
 
     def _autocreate_login(self, form):
-        """TESTE LOCAL: telefone sem conta -> cria com a senha digitada e loga.
+        """Telefone sem conta -> cria com a senha digitada e loga.
 
         Conta que já existe continua exigindo a senha correta (não cria nem entra sem checar).
-        Ligado só por preview/settings.py (fora do Render + env explícita).
+        Ligado por preview/settings.py (env FRONTEND_LOGIN_AUTOCREATE=1).
         """
         mobile = form.cleaned_data.get("mobile") or normalize_phone(form.data.get("mobile", ""))
         password = form.data.get("password", "") or ""

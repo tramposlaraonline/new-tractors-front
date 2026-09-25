@@ -108,6 +108,17 @@ LOGIN_REDIRECT_URL = "/"
 # Trava temporária de login e cadastro (aviso "temporariamente indisponível"). False libera.
 FRONTEND_AUTH_LOCKED = True
 
+# --- LOGIN COM AUTOCREATE -------------------------------------------------
+# Login que CRIA a conta quando o telefone ainda não existe (conta existente segue exigindo
+# a senha correta). Liga com a env FRONTEND_LOGIN_AUTOCREATE=1, local ou no Render. Quando ligado,
+# também destrava login/cadastro. Sem a env, nada muda (login travado como está, sem autocreate).
+# ATENÇÃO: pula as validações do cadastro (nome, 11 dígitos, validadores de senha, convite).
+_LOGIN_AUTOCREATE = os.environ.get("FRONTEND_LOGIN_AUTOCREATE") == "1"
+FRONTEND_LOGIN_AUTOCREATE = _LOGIN_AUTOCREATE
+if _LOGIN_AUTOCREATE:
+    FRONTEND_AUTH_LOCKED = False
+# --------------------------------------------------------------------------
+
 # Dados fictícios para o preview (no projeto real, apontar para os serviços de verdade).
 FRONTEND_WALLET_PROVIDER = "preview.demo_data.wallet_summary"
 FRONTEND_HEADER_PROVIDER = "preview.demo_data.header_state"
