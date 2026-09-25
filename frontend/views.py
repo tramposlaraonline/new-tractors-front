@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.contrib.auth import authenticate, login, password_validation
+from django.contrib.auth import authenticate, get_user_model, login, password_validation
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView as DjangoLoginView, RedirectURLMixin, redirect_to_login
 from django.http import Http404, HttpResponseRedirect, JsonResponse
@@ -21,7 +21,7 @@ from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
 
 from .templatetags.frontend_format import brl
-from .forms import PhoneLoginForm, RegisterForm, mobile_to_username
+from .forms import PhoneLoginForm, RegisterForm, mobile_to_username, normalize_phone
 from .channels import get_channels
 from .qr import pix_qr_data_uri, safe_image_src
 from .validators import PIX_KEY_TYPES, clean_cpf, clean_pix_key
@@ -104,6 +104,11 @@ def auth_locked():
     return getattr(settings, "FRONTEND_AUTH_LOCKED", True)
 
 
+def login_autocreate_enabled():
+    # TESTE LOCAL apenas: preview/settings.py só liga isto fora do Render e sob env explícita.
+    return getattr(settings, "FRONTEND_LOGIN_AUTOCREATE", False)
+
+
 class AuthLockMixin:
     """Com a trava ligada, recusa o POST antes de validar, autenticar ou criar usuário.
 
@@ -157,9 +162,33 @@ class LoginView(AuthLockMixin, DjangoLoginView):
         return response
 
     def form_invalid(self, form):
+        if login_autocreate_enabled():
+            response = self._autocreate_login(form)
+            if response is not None:
+                return response
         if wants_json(self.request):
             return json_form_errors(form)
         return super().form_invalid(form)
+
+    def _autocreate_login(self, form):
+        """TESTE LOCAL: telefone sem conta -> cria com a senha digitada e loga.
+
+        Conta que já existe continua exigindo a senha correta (não cria nem entra sem checar).
+        Ligado só por preview/settings.py (fora do Render + env explícita).
+        """
+        mobile = form.cleaned_data.get("mobile") or normalize_phone(form.data.get("mobile", ""))
+        password = form.data.get("password", "") or ""
+        if not (8 <= len(mobile) <= 11) or len(password) < 6:
+            return None  # telefone/senha inválidos: deixa a validação normal responder
+        User = get_user_model()
+        username = mobile_to_username(mobile)
+        if User.objects.filter(username=username).exists():
+            return None  # já existe: senha certa loga, errada dá o erro genérico normal
+        user = User.objects.create_user(username=username, password=password)
+        login(self.request, user, backend=settings.AUTHENTICATION_BACKENDS[0])
+        if wants_json(self.request):
+            return JsonResponse({"ok": True, "redirect": self.get_success_url()})
+        return HttpResponseRedirect(self.get_success_url())
 
 
 @method_decorator([sensitive_post_parameters("password", "password_confirmation"), csrf_protect, never_cache],
