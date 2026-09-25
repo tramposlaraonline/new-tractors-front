@@ -120,12 +120,19 @@
     }
     if ((el = e.target.closest('[data-withdraw-submit]'))) {
       var state = update(page);
-      if (!state.valid) return;
-      document.querySelector('[data-withdraw-confirm-amount]').textContent = brl(state.cents);
+      if (!state.valid) {
+        var amountInput = page.querySelector('[data-withdraw-amount]');
+        if (amountInput) amountInput.focus();
+        return;
+      }
+      var confirmAmount = document.querySelector('[data-withdraw-confirm-amount]');
+      if (!confirmAmount || !window.NT) return;
+      confirmAmount.textContent = brl(state.cents);
       window.NT.openModal('withdrawConfirm');
       return;
     }
     if ((el = e.target.closest('[data-withdraw-confirm]'))) {
+      if (!window.NT) return;
       window.NT.closeModal(document.getElementById('withdrawConfirm'), false);
       submit(page);
     }
@@ -133,8 +140,16 @@
 
   document.addEventListener('app:page', function () {
     var page = root();
-    if (page) { pendingKey = null; update(page); }
-    scheduleQueue();
+    if (page) {
+      pendingKey = null;
+      update(page);
+    }
+    // Entrando na tela de saque: atualiza a fila na hora (não espera 15s).
+    if (queueCard() && !document.hidden) {
+      pollQueue();
+    } else {
+      scheduleQueue();
+    }
   });
 
   // -----------------------------------------------------------------------
@@ -352,5 +367,9 @@
 
   // Carga direta de /withdraw: o app:page inicial do app.js dispara antes deste script.
   if (root()) update(root());
-  scheduleQueue();
+  if (queueCard() && !document.hidden) {
+    pollQueue();
+  } else {
+    scheduleQueue();
+  }
 })();
