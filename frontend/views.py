@@ -2,7 +2,10 @@ import logging
 import re
 from urllib.parse import quote, urlencode
 from decimal import Decimal, InvalidOperation
+import json
 
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, get_user_model, login, password_validation
@@ -25,6 +28,8 @@ from .forms import PhoneLoginForm, RegisterForm, mobile_to_username, normalize_p
 from .channels import get_channels
 from .qr import pix_qr_data_uri, safe_image_src
 from .validators import PIX_KEY_TYPES, clean_cpf, clean_pix_key
+from .models import VipCharge
+from .pixzy import create_vip_transaction, get_transaction, VIP_AMOUNT
 from .providers import (
     get_checkin_state, get_demo_withdraw, get_header_state, get_products, get_profile_state, get_roulette_state, get_wallet_summary,
     get_deposit_charge, get_deposit_state, get_notifications, get_purchases, get_team,
@@ -970,3 +975,161 @@ class RecruitActionView(HomeActionView):
         if not result.get("ok"):
             return 200, {"ok": False, "message": result.get("message")}
         return 200, {"ok": True}
+
+class VipView(AppPageView):
+    """Página de venda do Plano VIP (/vip)."""
+    tab = "profile"
+    title = "Plano VIP"
+    page_template = "frontend/app/pages/vip.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["vip_price"] = Decimal(VIP_AMOUNT) / 100
+        ctx["vip_price_cents"] = VIP_AMOUNT
+        # se já for VIP, pode mostrar estado diferente
+        profile = getattr(self.request.user, "profile", None)
+        ctx["is_vip"] = bool(getattr(profile, "is_vip", False))
+        return ctx
+
+
+class VipPaymentView(AppPageView):
+    """Tela de pagamento PIX do VIP (/vip/pagamento/<transaction_id>)."""
+    tab = "profile"
+    title = "Pagamento VIP"
+    page_template = "frontend/app/pages/vip_payment.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        tx_id = kwargs.get("transaction_id", "")
+        charge = VipCharge.objects.filter(user=self.request.user, transaction_id=tx_id).first()
+        if not charge:
+            raise Http404("Cobrança não encontrada.")
+        ctx["charge"] = {
+            "id": charge.transaction_id,
+            "amount": Decimal(charge.amount_cents) / 100,
+            "pix_code": charge.br_code,
+            "qr_src": pix_qr_data_uri(charge.br_code),
+            "status": charge.status,
+        }
+        return ctx
+
+
+class VipActionView(HomeActionView):
+    """POST /acoes/vip — cria a cobrança na Pixzy e redireciona para a tela de pagamento."""
+
+    def perform(self, request):
+        # Já é VIP?
+        profile = getattr(request.user, "profile", None)
+        if profile and getattr(profile, "is_vip", False):
+            return 200, {"ok": False, "message": "Você já é investidor VIP."}
+
+        # Reaproveita cobrança pending recente (evita spam)
+        recent = (
+            VipCharge.objects
+            .filter(user=request.user, status="pending")
+            .order_by("-created_at")
+            .first()
+        )
+        if recent and (timezone.now() - recent.created_at).total_seconds() < 600:
+            return 200, {
+                "ok": True,
+                "redirect": reverse("frontend:vip_payment", args=[recent.transaction_id]),
+            }
+
+        webhook = f"{settings.PIXZY_WEBHOOK_BASE.rstrip('/')}/webhooks/pixzy/vip"
+        result = create_vip_transaction(request.user, webhook)
+        if not result.get("ok"):
+            return 200, {"ok": False, "message": result.get("message") or "Erro ao gerar PIX."}
+
+        charge = VipCharge.objects.create(
+            user=request.user,
+            transaction_id=result["transaction_id"],
+            amount_cents=result["amount"],
+            br_code=result["br_code"],
+            status="pending",
+        )
+        return 200, {
+            "ok": True,
+            "redirect": reverse("frontend:vip_payment", args=[charge.transaction_id]),
+        }
+
+
+class VipStatusView(HomeActionView):
+    """POST /acoes/vip/<transaction_id>/status — polling da tela de pagamento."""
+
+    def perform(self, request, transaction_id):
+        charge = VipCharge.objects.filter(user=request.user, transaction_id=transaction_id).first()
+        if not charge:
+            return 404, {"ok": False, "message": "Cobrança não encontrada."}
+
+        if charge.status == "paid":
+            return 200, {"ok": True, "status": "paid", "redirect": reverse("frontend:vip")}
+
+        # Consulta opcional na API (além do webhook)
+        remote = get_transaction(transaction_id)
+        if remote:
+            remote_status = (remote.get("status") or "").lower()
+            if remote_status in ("paid", "approved", "completed"):
+                _mark_vip_paid(charge)
+                return 200, {"ok": True, "status": "paid", "redirect": reverse("frontend:vip")}
+            if remote_status in ("expired", "failed", "cancelled"):
+                charge.status = "expired" if remote_status == "expired" else "failed"
+                charge.save(update_fields=["status"])
+                return 200, {"ok": True, "status": charge.status}
+
+        return 200, {"ok": True, "status": charge.status}
+
+
+def _mark_vip_paid(charge: VipCharge):
+    if charge.status == "paid":
+        return
+    charge.status = "paid"
+    charge.paid_at = timezone.now()
+    charge.save(update_fields=["status", "paid_at"])
+
+    user = charge.user
+    # Ajuste conforme seu model de perfil
+    profile = getattr(user, "profile", None)
+    if profile is not None:
+        if hasattr(profile, "is_vip"):
+            profile.is_vip = True
+        if hasattr(profile, "vip_since"):
+            profile.vip_since = timezone.now()
+        profile.save()
+    else:
+        # fallback: flag no próprio user se existir
+        if hasattr(user, "is_vip"):
+            user.is_vip = True
+            user.save(update_fields=["is_vip"])
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class PixzyVipWebhookView(View):
+    """Webhook Pixzy: POST /webhooks/pixzy/vip"""
+
+    def post(self, request):
+        try:
+            payload = json.loads(request.body.decode("utf-8") or "{}")
+        except json.JSONDecodeError:
+            return JsonResponse({"ok": False}, status=400)
+
+        event = (payload.get("event") or payload.get("type") or "").lower()
+        data = payload.get("data") or payload
+        tx_id = data.get("transaction_id") or data.get("id")
+        metadata = data.get("metadata") or {}
+
+        if not tx_id:
+            return JsonResponse({"ok": True})  # ack mesmo assim
+
+        charge = VipCharge.objects.filter(transaction_id=tx_id).first()
+        if not charge:
+            return JsonResponse({"ok": True})
+
+        if event in ("paid",) or (data.get("status") or "").lower() in ("paid", "approved", "completed"):
+            _mark_vip_paid(charge)
+        elif event in ("expired", "failed") or (data.get("status") or "").lower() in ("expired", "failed"):
+            if charge.status == "pending":
+                charge.status = "expired" if event == "expired" else "failed"
+                charge.save(update_fields=["status"])
+
+        return JsonResponse({"ok": True})

@@ -170,3 +170,6 @@ if not ON_RENDER:
 
 PIXZY_API_TOKEN = "683|MzHcc5MVOWvxig7sGoVfjQpTw9I1mvv2eg1ziV8y2e596a37"
 PIXZY_WEBHOOK_BASE = "https://new-tractors.site"
+PIXZY_API_BASE = "https://app.pixzypay.com/api"
+
+VIP_AMOUNT_CENTS = 4790  # R$ 47,90

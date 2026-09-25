@@ -608,11 +608,8 @@
     const btnVip = document.getElementById('btnVipContinue');
     if (btnVip) {
       btnVip.addEventListener('click', () => {
-        if (window.appNavigate) {
-          window.appNavigate('/vip');
-        } else {
-          window.location.href = '/vip';
-        }
+        if (window.appNavigate) window.appNavigate('/vip');
+        else window.location.href = '/vip';
         closeModal();
       });
     }

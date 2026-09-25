@@ -3,6 +3,7 @@ from urllib.parse import urlparse
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.conf import settings
 
 CHANNELS_CACHE_KEY = "frontend:channels"
 
@@ -57,3 +58,27 @@ class CommunicationChannels(models.Model):
     def delete(self, *args, **kwargs):
         cache.delete(CHANNELS_CACHE_KEY)
         return super().delete(*args, **kwargs)
+
+class VipCharge(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pendente"),
+        ("paid", "Pago"),
+        ("expired", "Expirado"),
+        ("failed", "Falhou"),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="vip_charges")
+    transaction_id = models.CharField(max_length=64, unique=True, db_index=True)
+    amount_cents = models.PositiveIntegerField(default=4790)  # R$ 47,90
+    br_code = models.TextField(blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="pending")
+    created_at = models.DateTimeField(auto_now_add=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Cobrança VIP"
+        verbose_name_plural = "Cobranças VIP"
+
+    def __str__(self):
+        return f"VIP {self.transaction_id} ({self.status})"

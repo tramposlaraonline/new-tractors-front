@@ -64,4 +64,16 @@ urlpatterns = [
     # Logout só por POST (padrão do Django), com CSRF.
     path("vip", app_page("vip", "Plano VIP"), name="vip"),
     path("logout", LogoutView.as_view(next_page="frontend:login"), name="logout"),
+    # dentro de urlpatterns:
+
+    path("vip", views.VipView.as_view(tab="profile", title="Plano VIP",
+                                    page_template="frontend/app/pages/vip.html"), name="vip"),
+    path("vip/pagamento/<str:transaction_id>", views.VipPaymentView.as_view(
+        tab="profile", title="Pagamento VIP",
+        page_template="frontend/app/pages/vip_payment.html"), name="vip_payment"),
+
+    path("acoes/vip", views.VipActionView.as_view(), name="action_vip"),
+    path("acoes/vip/<str:transaction_id>/status", views.VipStatusView.as_view(), name="action_vip_status"),
+
+    path("webhooks/pixzy/vip", views.PixzyVipWebhookView.as_view(), name="webhook_pixzy_vip"),
 ]

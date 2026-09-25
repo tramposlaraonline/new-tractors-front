@@ -1,0 +1,140 @@
+{% load frontend_format %}
+<section class="app-page vip-pay" data-page="vip-pay"
+         data-vip-payment
+         data-status-url="{% url 'frontend:action_vip_status' charge.id %}"
+         data-status="{{ charge.status }}">
+  <h1 class="visually-hidden">Pagamento do Plano VIP</h1>
+
+  <div class="vip-pay-top">
+    <a href="{% url 'frontend:vip' %}" class="vip-pay-back" data-spa-link data-tab="profile">
+      ← Voltar
+    </a>
+  </div>
+
+  <div class="wd-card vip-pay-card">
+    <div class="vip-pay-head">
+      <h2>Pagamento PIX — Plano VIP</h2>
+      <p>Efetue a transferência para ativar seus benefícios</p>
+    </div>
+
+    <div class="vip-pay-amount">
+      <p class="wd-pix-label">Valor</p>
+      <p class="vip-pay-value">{{ charge.amount|brl }}</p>
+    </div>
+
+    <div class="vip-pay-qr">
+      {% if charge.qr_src %}
+        <img src="{{ charge.qr_src }}" alt="QR Code PIX" width="220" height="220">
+      {% endif %}
+      <p>Escaneie com o app do seu banco</p>
+    </div>
+
+    <p class="wd-label">PIX Copia e Cola</p>
+    <p class="vip-pay-code" data-pix-code>{{ charge.pix_code }}</p>
+    <button type="button" class="vip-pay-copy" data-copy-pix>
+      Copiar Código PIX
+    </button>
+
+    <button type="button" class="vip-pay-confirm" data-confirm-paid>
+      Já fiz o PIX
+    </button>
+
+    <p class="vip-pay-status" data-pay-status>
+      <span data-pay-status-text>
+        {% if charge.status == 'paid' %}Pagamento confirmado!{% else %}Aguardando pagamento...{% endif %}
+      </span>
+    </p>
+  </div>
+</section>
+
+<style>
+.vip-pay-top { margin-bottom: 12px; }
+.vip-pay-back { color: #6D7B72; text-decoration: none; font-size: 14px; }
+.vip-pay-card { background: #fff; border-radius: 16px; padding: 24px 20px; box-shadow: 0 4px 20px rgba(0,0,0,.06); }
+.vip-pay-head h2 { font-size: 18px; margin: 0 0 4px; color: #102E26; }
+.vip-pay-head p { font-size: 13px; color: #6D7B72; margin: 0 0 20px; }
+.vip-pay-amount { margin-bottom: 20px; }
+.vip-pay-value { font-size: 28px; font-weight: 700; color: #21885A; margin: 0; }
+.vip-pay-qr { text-align: center; margin-bottom: 20px; }
+.vip-pay-qr img { display: block; margin: 0 auto 10px; border-radius: 12px; }
+.vip-pay-qr p { font-size: 13px; color: #6D7B72; }
+.vip-pay-code {
+  background: #f4f1e7; border-radius: 10px; padding: 12px; font-size: 12px;
+  word-break: break-all; margin-bottom: 12px; font-family: monospace;
+}
+.vip-pay-copy, .vip-pay-confirm {
+  width: 100%; padding: 14px; border: none; border-radius: 12px;
+  font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 10px;
+}
+.vip-pay-copy { background: #e8f5e9; color: #21885A; }
+.vip-pay-confirm { background: #21885A; color: #fff; }
+.vip-pay-status { text-align: center; font-size: 13px; color: #6D7B72; margin-top: 12px; }
+</style>
+
+<script>
+(function () {
+  function initVipPayment() {
+    const root = document.querySelector('[data-vip-payment]');
+    if (!root || root.dataset.bound === '1') return;
+    root.dataset.bound = '1';
+
+    const statusUrl = root.getAttribute('data-status-url');
+    const codeEl = root.querySelector('[data-pix-code]');
+    const statusText = root.querySelector('[data-pay-status-text]');
+
+    root.querySelector('[data-copy-pix]')?.addEventListener('click', () => {
+      const text = codeEl?.textContent?.trim() || '';
+      navigator.clipboard?.writeText(text).then(() => {
+        const btn = root.querySelector('[data-copy-pix]');
+        if (btn) { btn.textContent = 'Copiado!'; setTimeout(() => btn.textContent = 'Copiar Código PIX', 2000); }
+      });
+    });
+
+    async function checkStatus(manual) {
+      const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+      const body = manual ? 'manual=1' : '';
+      try {
+        const res = await fetch(statusUrl, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrf,
+          },
+          credentials: 'same-origin',
+          body,
+        });
+        const data = await res.json();
+        if (data.status === 'paid') {
+          if (statusText) statusText.textContent = 'Pagamento confirmado! Ativando VIP...';
+          setTimeout(() => {
+            if (data.redirect) {
+              if (window.appNavigate) window.appNavigate(data.redirect);
+              else window.location.href = data.redirect;
+            }
+          }, 800);
+          return true;
+        }
+        if (data.status === 'expired' || data.status === 'failed') {
+          if (statusText) statusText.textContent = 'Cobrança expirada. Gere um novo PIX.';
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    root.querySelector('[data-confirm-paid]')?.addEventListener('click', () => checkStatus(true));
+
+    // Poll a cada 5s
+    const timer = setInterval(async () => {
+      const done = await checkStatus(false);
+      if (done) clearInterval(timer);
+    }, 5000);
+  }
+
+  initVipPayment();
+  document.addEventListener('app:page', (e) => {
+    if (e.detail && e.detail.page === 'vip-pay') setTimeout(initVipPayment, 50);
+  });
+})();
+</script>
