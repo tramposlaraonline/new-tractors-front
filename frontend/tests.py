@@ -1675,3 +1675,21 @@ class DemoWithdrawHomeTests(TestCase):
         self.assertNotIn("data-demo-withdraw", html)
         self.assertIn('data-wallet="withdraw_balance">R$ 41,90</p>', html)
         self.assertFalse(DemoWithdrawBalance.objects.exists())
+
+
+# Regra do Caio (25/09): o admin vê exatamente o que o usuário vê — as travas temporárias valem para todos.
+@override_settings(FRONTEND_ONLY_HOME=True, FRONTEND_BALANCE_RECALC=True,
+                   FRONTEND_DEMO_WITHDRAW_PROVIDER="preview.demo_withdraw.state")
+class AdminSeesWhatUsersSeeTests(TestCase):
+    def test_staff_gets_the_same_locks_recalc_and_demo_as_a_common_user(self):
+        admin = get_user_model().objects.create_user(username="admin-teste", password="x", is_staff=True,
+                                                     is_superuser=True)
+        self.client.force_login(admin)
+        html = self.client.get(reverse("frontend:home")).content.decode()
+        self.assertIn('id="areaLockedModal"', html)
+        self.assertEqual(html.count("Recalculando saldo..."), 2)
+        self.assertIn("data-demo-withdraw", html)
+        self.assertIn(DEMO_SEAL, html)
+        self.assertRedirects(self.client.get(reverse("frontend:team")), reverse("frontend:home"),
+                             fetch_redirect_response=False)
+        self.assertEqual(self.client.get(reverse("frontend:statement")).status_code, 503)
