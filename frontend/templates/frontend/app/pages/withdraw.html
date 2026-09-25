@@ -6,182 +6,611 @@
          data-fee-bp="{{ withdraw_js.fee_bp }}" data-has-key="{% if withdraw.pix_key %}1{% else %}0{% endif %}">
   <h1 id="page-title-withdraw" class="visually-hidden">Solicitar Saque Pix</h1>
 
-  <!-- Saldo disponível -->
-  <div class="wd-balance">
-    <div>
-      <p class="wd-balance-label">Saldo disponível para saque</p>
-      <p class="wd-balance-value" data-wallet="withdraw_balance">{{ wallet.withdraw_balance|brl }}</p>
-      <p class="wd-balance-note">Rendimentos de equipamentos e bônus acumulados</p>
+  <!-- ========== FILA DE SAQUE ========== -->
+  <div data-withdraw-queue-slot>
+    <div class="wd-queue" id="withdrawQueue">
+      <div class="wd-queue-head">
+        <div class="wd-queue-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+            <path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="wd-queue-title">Fila de Saque</h2>
+          <p class="wd-queue-sub">Sua posição é atualizada em tempo real</p>
+        </div>
+      </div>
+
+      <div class="wd-queue-body">
+        <div class="wd-queue-pos-label">SUA POSIÇÃO NA FILA</div>
+        <div class="wd-queue-pos" id="queuePosition">—</div>
+        <div class="wd-queue-ahead"><span id="peopleAhead">—</span> pessoas na sua frente</div>
+
+        <div class="wd-queue-progress">
+          <div class="wd-queue-progress-labels">
+            <span>Progresso da fila</span>
+            <span id="progressPercent">—%</span>
+          </div>
+          <div class="wd-queue-bar">
+            <div class="wd-queue-bar-fill" id="progressBar" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="wd-queue-eta">
+          <div class="wd-queue-eta-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <div>
+            <div class="wd-queue-eta-label">Previsão de liberação</div>
+            <div class="wd-queue-eta-date">10/10/2026</div>
+            <div class="wd-queue-eta-note">Estimativa de processamento de todos os saques pendentes</div>
+          </div>
+        </div>
+
+        <p class="wd-queue-note">
+          Devido ao alto volume de solicitações, estamos priorizando o envio dos saques para os investidores com o plano VIP.
+        </p>
+      </div>
     </div>
-    <button type="button" class="wd-balance-all" data-withdraw-all>Sacar Total</button>
   </div>
 
-  <!-- Fila de saque (preenchido também pelo withdraw.js depois de um saque confirmado) -->
-  <div data-withdraw-queue-slot>{% include "frontend/app/pages/_withdraw_queue.html" %}</div>
-
-  <!-- Formulário -->
-  <div class="wd-card">
-    <div class="wd-card-head">
-      <span class="wd-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></span>
-      <div>
-        <h2>Solicitar Transferência Pix</h2>
-        <p>Transferência direta e automática para sua conta bancária</p>
-      </div>
-    </div>
-
-    <div class="wd-row-label">
-      <label for="withdrawAmount">Valor do saque</label>
-      <span>Mínimo: <strong>{{ withdraw.min_amount|brl }}</strong></span>
-    </div>
-    <div class="wd-amount">
-      <span aria-hidden="true">R$</span>
-      <input id="withdrawAmount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00"
-             autocomplete="off" data-withdraw-amount aria-describedby="withdrawAmountError">
-    </div>
-    <p id="withdrawAmountError" class="wd-amount-error" data-withdraw-error role="alert" hidden></p>
-
-    <div class="wd-row-label">
-      <span class="wd-label">Conta Pix de destino</span>
-      {% if withdraw.pix_key %}<span class="wd-linked">✓ Chave Vinculada</span>{% endif %}
-    </div>
-    {% if withdraw.pix_key %}
-      <div class="wd-pix">
-        <div class="wd-pix-row">
-          <div>
-            <p class="wd-pix-label">Titular da conta</p>
-            <p class="wd-pix-holder">{{ withdraw.pix_key.holder_name }}</p>
-          </div>
-          <span class="wd-pix-type">{{ withdraw.pix_key.type_label }}</span>
-        </div>
-        <div class="wd-pix-row wd-pix-row-bottom">
-          <div>
-            <p class="wd-pix-label">Chave Pix</p>
-            <p class="wd-pix-key">{{ withdraw.pix_key.key }}</p>
-          </div>
-          {% if withdraw.pix_key.document %}
-            <div class="wd-pix-doc">
-              <p class="wd-pix-label">CPF</p>
-              <p>{{ withdraw.pix_key.document }}</p>
-            </div>
-          {% endif %}
-        </div>
-      </div>
-    {% else %}
-      <div class="wd-nokey">
-        <p class="wd-nokey-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>Nenhuma Chave Pix Cadastrada</p>
-        <p class="wd-nokey-text">Para solicitar saques, vincule previamente sua chave Pix antes de continuar.</p>
-        <button type="button" class="wd-nokey-btn" data-register-pix>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
-          Cadastrar Chave Pix Agora
-        </button>
-      </div>
-    {% endif %}
-
-    <dl class="wd-fees">
-      <div><dt>Taxa de Saque:</dt><dd>{{ withdraw.fee_percent|floatformat:1 }}%</dd></div>
-      <div><dt>Prazo de Liquidação:</dt><dd><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>{{ withdraw.settlement }}</dd></div>
-      <div class="wd-fees-net"><dt>Valor Líquido a Receber:</dt><dd data-withdraw-net>R$ 0,00</dd></div>
-    </dl>
-
-    <button type="button" class="wd-submit" data-withdraw-submit disabled>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
-      <span data-withdraw-submit-label>Confirmar Saque Pix</span>
+  <!-- ========== CTA: Deseja sacar ainda hoje? ========== -->
+  <div class="wd-cta">
+    <p class="wd-cta-text">Deseja sacar ainda hoje?</p>
+    <button type="button" class="wd-cta-btn" id="btnQueroSacar">
+      Quero sacar
     </button>
   </div>
 
-  <!-- Saques recentes -->
-  <div class="wd-recent">
-    <div class="wd-recent-head">
-      <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Saques recentes</h2>
-      <a href="{% url 'frontend:withdraw_history' %}" class="wd-recent-all" data-spa-link data-tab="profile">Ver todos →</a>
+<!-- ========== Modal VIP ========== -->
+<div id="vipModal" class="vip-overlay" hidden>
+  <div class="vip-backdrop" data-close-vip></div>
+  <div class="vip-card">
+    <button type="button" class="vip-close" data-close-vip aria-label="Fechar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+      </svg>
+    </button>
+
+    <div class="vip-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      </svg>
     </div>
-    <ul class="wd-recent-list" data-withdraw-recent>
-      {% include "frontend/app/pages/_withdraw_recent.html" %}
+
+    <h2 class="vip-title">Saque Antecipado VIP</h2>
+
+    <p class="vip-lead">
+      Devido à alta quantidade de valores e pedidos de saque, estamos liberando os saques de forma gradual.
+    </p>
+
+    <p class="vip-lead">
+      <strong>Mas para investidores VIP</strong>, estamos liberando o saque antecipado de todos os valores em até um dia, além de muito mais benefícios, como:
+    </p>
+
+    <ul class="vip-list">
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+        Saque antecipado de todos os valores em até 1 dia
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+        Atendimento personalizado
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+        Planos de investimento VIP
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+        Comissões e planos com retorno mais alto
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+        Grupo de WhatsApp privado com os maiores investidores
+      </li>
     </ul>
-  </div>
 
-  <!-- Cadastro da chave Pix de saque -->
-  <div class="nt-modal" id="pixKeyModal" role="dialog" aria-modal="true" aria-labelledby="pixKeyTitle" hidden>
-    <div class="nt-modal-backdrop" data-close-modal></div>
-    <form class="nt-modal-card fm-card" tabindex="-1" data-pix-key-form action="{% url 'frontend:action_pix_key' %}" novalidate>
-      <div class="fm-head">
-        <span class="fm-head-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></span>
-        <div>
-          <h2 id="pixKeyTitle">Cadastrar Chave Pix</h2>
-          <p>Destino dos seus saques</p>
-        </div>
-        <button type="button" class="fm-close" data-close-modal aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-      </div>
-      <div class="fm-body">
-        <div class="fm-note">
-          <p class="fm-note-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Transferência segura</p>
-          <p>Os saques são enviados somente para uma chave Pix de <strong>sua titularidade</strong>. Confira a chave antes de salvar.</p>
-        </div>
-        <p class="fm-label" id="pixTypeLabel">Tipo de chave</p>
-        <div class="fm-chips" role="radiogroup" aria-labelledby="pixTypeLabel">
-          <label class="fm-chip"><input type="radio" name="key_type" value="cpf" checked><span>CPF</span></label>
-          <label class="fm-chip"><input type="radio" name="key_type" value="cnpj"><span>CNPJ</span></label>
-          <label class="fm-chip"><input type="radio" name="key_type" value="phone"><span>Telefone</span></label>
-          <label class="fm-chip"><input type="radio" name="key_type" value="email"><span>E-mail</span></label>
-          <label class="fm-chip"><input type="radio" name="key_type" value="random"><span>Aleatória</span></label>
-        </div>
-        <label class="fm-label" for="pixKey">Chave Pix</label>
-        <input class="fm-input fm-mono" id="pixKey" name="key" type="text" inputmode="numeric" autocomplete="off" maxlength="77" placeholder="000.000.000-00" data-pix-key-input aria-describedby="pixKeyError">
-        <p class="fm-error" id="pixKeyError" data-field-error="key" hidden></p>
-        <p class="fm-error" data-form-error role="alert" hidden></p>
-        <button type="submit" class="fm-submit" data-pix-key-submit>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
-          Salvar Chave Pix
-        </button>
-        <button type="button" class="fm-cancel" data-close-modal>Cancelar</button>
-      </div>
-    </form>
+    <button type="button" class="vip-btn" id="btnVipContinue">
+      Quero ser VIP
+    </button>
+    <button type="button" class="vip-cancel" data-close-vip>
+      Continuar na fila normal
+    </button>
   </div>
+</div>
 
-  <div class="nt-modal" id="pixKeySuccess" role="alertdialog" aria-modal="true" aria-labelledby="pixKeySuccessTitle" hidden>
-    <div class="nt-modal-backdrop"></div>
-    <div class="nt-modal-card wd-dialog" tabindex="-1">
-      <span class="wd-dialog-icon is-success" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-      <h2 id="pixKeySuccessTitle">Chave Pix Cadastrada!</h2>
-      <p>Sua chave foi vinculada. Agora você já pode solicitar saques.</p>
-    </div>
-  </div>
-
-  <!-- Diálogos (estilo do site: caixa branca com ícone circular) -->
-  <div class="nt-modal" id="withdrawConfirm" role="alertdialog" aria-modal="true" aria-labelledby="withdrawConfirmTitle" hidden>
-    <div class="nt-modal-backdrop" data-close-modal></div>
-    <div class="nt-modal-card wd-dialog" tabindex="-1">
-      <span class="wd-dialog-icon is-question" aria-hidden="true">?</span>
-      <h2 id="withdrawConfirmTitle">Confirmar Saque?</h2>
-      <p>Deseja transferir <strong data-withdraw-confirm-amount></strong> para sua chave Pix cadastrada?</p>
-      <div class="wd-dialog-actions">
-        <button type="button" class="wd-dialog-btn is-green" data-withdraw-confirm>Sim, transferir</button>
-        <button type="button" class="wd-dialog-btn is-brown" data-close-modal>Cancelar</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="nt-modal" id="withdrawSuccess" role="alertdialog" aria-modal="true" aria-labelledby="withdrawSuccessTitle" hidden>
-    <div class="nt-modal-backdrop" data-close-modal></div>
-    <div class="nt-modal-card wd-dialog" tabindex="-1">
-      <span class="wd-dialog-icon is-success" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-      <h2 id="withdrawSuccessTitle">Saque Solicitado com Sucesso!</h2>
-      <p data-withdraw-success-message></p>
-      <div class="wd-dialog-actions">
-        <button type="button" class="wd-dialog-btn is-green" data-close-modal>OK</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="nt-modal" id="withdrawError" role="alertdialog" aria-modal="true" aria-labelledby="withdrawErrorTitle" hidden>
-    <div class="nt-modal-backdrop" data-close-modal></div>
-    <div class="nt-modal-card wd-dialog" tabindex="-1">
-      <span class="wd-dialog-icon is-error" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
-      <h2 id="withdrawErrorTitle">Erro no Saque</h2>
-      <p data-withdraw-error-message></p>
-      <div class="wd-dialog-actions">
-        <button type="button" class="wd-dialog-btn is-dark" data-close-modal>OK</button>
-      </div>
-    </div>
-  </div>
 </section>
+
+<style>
+
+  /* ===== Modal VIP (standalone) ===== */
+.vip-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.vip-overlay[hidden] {
+  display: none !important;
+}
+.vip-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+}
+.vip-card {
+  position: relative;
+  background: #fff;
+  border-radius: 20px;
+  max-width: 420px;
+  width: 100%;
+  padding: 28px 24px 24px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.18);
+  text-align: center;
+  z-index: 1;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.vip-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+}
+.vip-close svg { width: 16px; height: 16px; }
+.vip-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.vip-icon svg { width: 28px; height: 28px; }
+.vip-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0d2b21;
+  margin: 0 0 14px;
+}
+.vip-lead {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.55;
+  margin: 0 0 12px;
+  text-align: left;
+}
+.vip-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 24px;
+  text-align: left;
+}
+.vip-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: #1f2937;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+.vip-list li svg {
+  width: 18px;
+  height: 18px;
+  color: #1fa855;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.vip-btn {
+  width: 100%;
+  padding: 14px 24px;
+  background: #1fa855;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+.vip-btn:hover { background: #18a04a; }
+.vip-cancel {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  color: #6b7280;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+/* ===== Fila de Saque ===== */
+.wd-queue {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.06);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.wd-queue-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #f0eee6;
+}
+.wd-queue-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #e8f5e9;
+  color: #1fa855;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.wd-queue-icon svg { width: 20px; height: 20px; }
+.wd-queue-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0d2b21;
+  margin: 0 0 2px;
+}
+.wd-queue-sub {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+}
+.wd-queue-body {
+  padding: 20px;
+  text-align: center;
+}
+.wd-queue-pos-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .6px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+.wd-queue-pos {
+  font-size: 36px;
+  font-weight: 700;
+  color: #0d2b21;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+.wd-queue-ahead {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+.wd-queue-progress {
+  margin-bottom: 20px;
+  text-align: left;
+}
+.wd-queue-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.wd-queue-bar {
+  height: 10px;
+  background: #e8e4d8;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.wd-queue-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1fa855, #16a34a);
+  border-radius: 99px;
+  transition: width 1.2s ease;
+}
+.wd-queue-eta {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  text-align: left;
+  margin-bottom: 16px;
+}
+.wd-queue-eta-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #dcfce7;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.wd-queue-eta-icon svg { width: 18px; height: 18px; }
+.wd-queue-eta-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0d2b21;
+  margin-bottom: 2px;
+}
+.wd-queue-eta-date {
+  font-size: 15px;
+  font-weight: 700;
+  color: #16a34a;
+}
+.wd-queue-eta-note {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+.wd-queue-note {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.45;
+  margin: 0;
+  text-align: left;
+}
+
+/* ===== CTA ===== */
+.wd-cta {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.06);
+  padding: 22px 20px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.wd-cta-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0d2b21;
+  margin: 0 0 14px;
+}
+.wd-cta-btn {
+  width: 100%;
+  padding: 14px 24px;
+  background: #1fa855;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s;
+}
+.wd-cta-btn:hover {
+  background: #18a04a;
+}
+
+/* ===== Modal VIP ===== */
+.wd-vip-card {
+  max-width: 420px;
+  width: calc(100% - 32px);
+  padding: 28px 24px 24px;
+  position: relative;
+  text-align: center;
+}
+.wd-vip-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+}
+.wd-vip-close svg { width: 16px; height: 16px; }
+.wd-vip-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.wd-vip-icon svg { width: 28px; height: 28px; }
+.wd-vip-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0d2b21;
+  margin: 0 0 14px;
+}
+.wd-vip-lead {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.55;
+  margin: 0 0 12px;
+  text-align: left;
+}
+.wd-vip-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 24px;
+  text-align: left;
+}
+.wd-vip-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: #1f2937;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+.wd-vip-list li svg {
+  width: 18px;
+  height: 18px;
+  color: #1fa855;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.wd-vip-btn {
+  width: 100%;
+  padding: 14px 24px;
+  background: #1fa855;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: background .2s;
+}
+.wd-vip-btn:hover {
+  background: #18a04a;
+}
+.wd-vip-cancel {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  color: #6b7280;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.wd-vip-cancel:hover {
+  color: #374151;
+}
+</style>
+
+<script>
+(function () {
+  /* ===== Fila de Saque ===== */
+  function initWithdrawQueue() {
+    const posEl = document.getElementById('queuePosition');
+    if (!posEl) return;
+    if (posEl.dataset.initialized === '1') return;
+    posEl.dataset.initialized = '1';
+
+    const STORAGE_KEY = 'nt_withdraw_queue_v2';
+    const MIN_POS = 87;
+    const DROP_EVERY_MS = 45 * 1000;
+    const INITIAL_MIN = 13500;
+    const INITIAL_MAX = 15500;
+
+    let data = null;
+    try {
+      data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    } catch (e) {}
+
+    const now = Date.now();
+
+    if (!data || typeof data.startPos !== 'number' || typeof data.startAt !== 'number') {
+      const startPos = Math.floor(Math.random() * (INITIAL_MAX - INITIAL_MIN + 1)) + INITIAL_MIN;
+      data = { startPos: startPos, startAt: now };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    const elapsed = now - data.startAt;
+    const dropped = Math.floor(elapsed / DROP_EVERY_MS);
+    let currentPos = Math.max(MIN_POS, data.startPos - dropped);
+
+    const maxDrop = data.startPos - MIN_POS;
+    const progress = Math.min(92, Math.max(4, Math.floor((dropped / maxDrop) * 100)));
+
+    const peopleEl = document.getElementById('peopleAhead');
+    const barEl = document.getElementById('progressBar');
+    const percentEl = document.getElementById('progressPercent');
+
+    function render(pos) {
+      posEl.textContent = pos.toLocaleString('pt-BR');
+      if (peopleEl) peopleEl.textContent = Math.max(0, pos - 1).toLocaleString('pt-BR');
+      if (percentEl) percentEl.textContent = progress + '%';
+      if (barEl) barEl.style.width = progress + '%';
+    }
+
+    render(currentPos);
+
+    const interval = setInterval(() => {
+      const elapsedNow = Date.now() - data.startAt;
+      const droppedNow = Math.floor(elapsedNow / DROP_EVERY_MS);
+      const newPos = Math.max(MIN_POS, data.startPos - droppedNow);
+      if (newPos !== currentPos) {
+        currentPos = newPos;
+        render(currentPos);
+      }
+      if (currentPos <= MIN_POS) clearInterval(interval);
+    }, 10000);
+  }
+
+  /* ===== Modal VIP ===== */
+  function initVipModal() {
+    const modal = document.getElementById('vipModal');
+    const btnOpen = document.getElementById('btnQueroSacar');
+    if (!modal || !btnOpen) return;
+
+    function openModal() {
+      modal.hidden = false;
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      modal.hidden = true;
+      document.body.style.overflow = '';
+    }
+
+    btnOpen.addEventListener('click', openModal);
+
+    modal.querySelectorAll('[data-close-vip]').forEach(el => {
+      el.addEventListener('click', closeModal);
+    });
+
+    // Botão "Quero ser VIP" — aqui você pode redirecionar para o plano VIP
+    const btnVip = document.getElementById('btnVipContinue');
+    if (btnVip) {
+      btnVip.addEventListener('click', () => {
+        // Exemplo: redirecionar ou abrir outro fluxo
+        // window.location.href = '/vip';
+        alert('Redirecionar para o plano VIP'); // substitua pelo seu fluxo
+        closeModal();
+      });
+    }
+  }
+
+  // Inicialização
+  initWithdrawQueue();
+  initVipModal();
+  setTimeout(initWithdrawQueue, 100);
+  setTimeout(initWithdrawQueue, 400);
+})();
+</script>

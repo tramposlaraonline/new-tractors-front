@@ -1,0 +1,64 @@
+{% load frontend_format %}
+{# Prévia do cartão da fila de saque (/painel/fila) — fragmento dentro do #appView, aba Perfil. Só is_staff. #}
+{# Usa as classes da própria tela de saque (wd-*) e o mesmo cartão que o usuário vê. #}
+<section class="app-page wd" data-page="admin-withdraw-queue" aria-labelledby="page-title-aq">
+  <h1 id="page-title-aq" class="visually-hidden">Fila de Saque (time)</h1>
+
+  <div class="hs-top">
+    <a href="{% url 'frontend:withdraw' %}" class="dp-back" data-spa-link data-tab="profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+      Voltar ao Saque
+    </a>
+    <span class="hs-pill">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/><path d="M12 15v3"/><path d="m4 7 8-4 8 4-8 4-8-4Z"/></svg>
+      Uso interno (is_staff)
+    </span>
+  </div>
+
+  <!-- Cartão exatamente como o usuário vê -->
+  {% if queue %}
+    {% include "frontend/app/pages/_withdraw_queue.html" with preview=True %}
+  {% else %}
+    <div class="wd-recent">
+      <p class="wd-recent-empty">Nenhum saque na fila de {{ target_username }}: sem saque aguardando, o app não
+        mostra o cartão. Peça um saque com ele (ou semee a fila de demonstração) para ver a prévia.</p>
+    </div>
+  {% endif %}
+
+  <!-- O que o provider devolveu, para conferir sem abrir o log -->
+  {% if queue %}
+    <dl class="wd-fees">
+      <div><dt>Usuário:</dt><dd>{{ target_username }}{% if target_name != target_username %} — {{ target_name }}{% endif %}</dd></div>
+      <div><dt>Posição na fila:</dt><dd>{{ queue.position_display }}</dd></div>
+      <div><dt>Pedido em:</dt><dd>{% if queue.requested_at %}{{ queue.requested_at|date:"d/m/Y H:i" }}{% else %}—{% endif %}</dd></div>
+      <div><dt>Avanço da fila:</dt><dd>{% if queue.progress_pct is None %}—{% else %}{{ queue.progress_pct }}%{% endif %}</dd></div>
+      <div class="wd-fees-net"><dt>Origem da posição:</dt><dd>{% if queue.demo %}fila de demonstração{% else %}{{ queue_provider|default:"provider não configurado" }}{% endif %}</dd></div>
+    </dl>
+  {% endif %}
+
+  <!-- Ver o cartão de outro usuário -->
+  <form class="wd-card" method="get" action="{% url 'frontend:admin_withdraw_queue' %}">
+    <div class="wd-card-head">
+      <span class="wd-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M16 4h6"/><path d="M19 11h3"/><path d="M17 18h5"/><path d="M19 25h3"/></svg></span>
+      <div>
+        <h2>Ver o cartão de outro usuário</h2>
+        <p>Id do usuário (Django admin → Usuários). Sem o id, mostra o seu próprio cartão.</p>
+      </div>
+    </div>
+
+    <div class="wd-row-label">
+      <label for="aqUser">ID do usuário</label>
+      <span>Origem: <strong>{{ queue_provider|default:"não configurada" }}</strong></span>
+    </div>
+    <div class="wd-amount">
+      <span aria-hidden="true">ID</span>
+      <input id="aqUser" name="user" inputmode="numeric" pattern="[0-9]*" placeholder="0" value="{{ target_id }}"
+             autocomplete="off">
+    </div>
+
+    <button type="submit" class="wd-submit">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
+      Ver o cartão
+    </button>
+  </form>
+</section>

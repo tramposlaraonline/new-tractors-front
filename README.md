@@ -63,14 +63,14 @@ Reconstrução do front-end do new-tractors.com a partir do HTML salvo do login 
       Sem a setting, o cartão não aparece. Posição inválida esconde o cartão e vai para o log.
       `FRONTEND_WITHDRAW_QUEUE_DEMO=1` põe no cartão o selo "Demonstração - fila fictícia, sem pagamento real"
       (ligado no preview; num backend que paga de verdade, fica desligado).
-    - Prévia da fila para o time (`/painel/fila`, só `is_staff`): desenha o mesmo cartão com o que o provider
-      devolve para o usuário escolhido (`?user=<id>`; sem o parâmetro, o próprio staff), mais os dados crus do
-      provider. É conferência de tela — não simula fila nem inventa posição, e o cartão entra sem
-      `data-withdraw-queue`, então o app.js não consulta `/acoes/saque/fila` ali. Anonymous vai para o login,
-      usuário comum recebe 403. O path é `painel/`, não `admin/`, porque o `/admin/` é do Django admin.
-      O atalho "Sacar" do Início (`frontend/app/pages/home.html`) aponta para essa página quando o usuário é
-      staff, e continua no `/withdraw` para todo mundo — sem `data-spa-link`, porque a página do time é fora da
-      casca do app.
+    - Prévia da fila para o time (`/painel/fila`, só `is_staff`): tela do app na aba Perfil (como `/withdraw`),
+      que desenha o mesmo cartão com o que o provider devolve para o usuário escolhido (`?user=<id>`; sem o
+      parâmetro, o próprio staff) e uma lista com os dados crus do provider. É conferência de tela — não
+      simula fila nem inventa posição, e o cartão entra sem `data-withdraw-queue`, então o withdraw.js não
+      consulta `/acoes/saque/fila` ali (que responderia sobre o staff, não sobre o usuário da prévia).
+      Anonymous vai para o login, usuário comum recebe 403. O path é `painel/`, não `admin/`, porque o
+      `/admin/` é do Django admin. O atalho "Sacar" do Início (`frontend/app/pages/home.html`) aponta para
+      essa página quando o usuário é staff, e continua no `/withdraw` para todo mundo.
    - Check-in: `FRONTEND_CHECKIN_ACTION` pode devolver `amount` → abre o modal "Check-in realizado!".
    - Processo seletivo: `FRONTEND_RECRUIT_ACTION(user, message)`.
    - **Links de suporte e comunidade: Django admin → "Links de atendimento e comunidade"** (registro único,

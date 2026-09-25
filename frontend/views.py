@@ -620,20 +620,18 @@ class WithdrawQueueView(HomeActionView):
 
     def perform(self, request):
         return 200, {"ok": True, "queue": withdraw_queue_json(get_withdraw_queue(request.user))}
-
-
-class StaffWithdrawQueueView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+class StaffWithdrawQueueView(UserPassesTestMixin, AppPageView):
     """Prévia do cartão da fila de saque (/painel/fila), só para o time (is_staff).
 
-    Desenha o cartão exatamente como o usuário vê, com o que o provider devolve para o usuário escolhido
-    (?user=<id>; sem o parâmetro, o próprio staff). É conferência de tela, não simulação: a posição
-    continua vindo de FRONTEND_WITHDRAW_QUEUE_PROVIDER, e um usuário sem saque pendente não tem cartão
-    nenhum — a página avisa em vez de inventar posição.
+    É uma tela do app como o /withdraw (aba Perfil), então entra na casca e troca por SPA. Desenha o cartão
+    exatamente como o usuário vê, com o que o provider devolve para o usuário escolhido (?user=<id>; sem o
+    parâmetro, o próprio staff). É conferência de tela, não simulação: a posição continua vindo de
+    FRONTEND_WITHDRAW_QUEUE_PROVIDER, e um usuário sem saque pendente não tem cartão nenhum — a tela avisa em
+    vez de inventar posição.
 
     O cartão entra com preview=True, sem `data-withdraw-queue`: assim o withdraw.js não polla /acoes/saque/fila
     (que sempre responderia sobre o staff logado, não sobre o usuário da prévia).
     """
-    template_name = "frontend/admin_withdraw_queue.html"
 
     def test_func(self):
         return self.request.user.is_staff
@@ -662,6 +660,7 @@ class StaffWithdrawQueueView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             "queue_provider": getattr(settings, "FRONTEND_WITHDRAW_QUEUE_PROVIDER", None),
         })
         return context
+
 
 
 # =========================================================================

@@ -483,16 +483,15 @@ class HomeAndHeaderTests(TestCase):
                       'data-tab="profile">', html)
         self.assertNotIn(reverse("frontend:admin_withdraw_queue"), html)
 
-    def test_sacar_shortcut_of_staff_opens_the_queue_preview_outside_the_app(self):
+    def test_sacar_shortcut_of_staff_opens_the_queue_preview_inside_the_app(self):
         self.user.is_staff = True
         self.user.save(update_fields=["is_staff"])
         html = self.client.get(reverse("frontend:home")).content.decode()
 
-        # Página do time: navegação de verdade (sem data-spa-link, que é da casca do app).
-        self.assertIn(f'<a href="{reverse("frontend:admin_withdraw_queue")}" class="home-action">', html)
+        # Mesma navegação SPA do /withdraw, só com outra URL.
+        self.assertIn(f'<a href="{reverse("frontend:admin_withdraw_queue")}" class="home-action" data-spa-link '
+                      'data-tab="profile">', html)
         self.assertIn("Fila de saque (time)", html)
-        self.assertNotIn(reverse("frontend:withdraw") + '" class="home-action"', html)
-        # O atalho também vem certaininho no fragmento que a SPA troca.
         self.assertIn(reverse("frontend:admin_withdraw_queue"), self.client.get(reverse("frontend:home"), **SPA).json()["html"])
 
     @override_settings(FRONTEND_ONLY_HOME=True)
@@ -1000,19 +999,28 @@ class StaffQueuePreviewTests(TestCase):
         self.client.force_login(self.staff)
 
     def test_staff_seesTheCardAsTheUserSeesIt(self):
-        html = self.client.get(self.url).content.decode()
+        res = self.client.get(self.url)
+        html = res.content.decode()
 
         for marker in ("Uso interno (is_staff)", "Seu saque está na fila", "data-queue-position>3<",
                        "2 pessoas na sua frente", "4 de 6 saques que estavam na sua frente já saíram da fila.",
-                       "R$ 45,25", "25/09 às 14:32"):
+                       "R$ 45,25", "25/09 às 14:32", "Posição na fila"):
             self.assertIn(marker, html)
         # A prévia é estática: sem data-withdraw-queue o withdraw.js não consulta /acoes/saque/fila.
         self.assertNotIn("data-withdraw-queue", html)
+        # É tela do app: entra na casca (cabeçalho, navbar) e troca por SPA.
+        self.assertContains(res, '<header class="app-header">')
+        self.assertContains(res, '<nav class="app-tabbar"')
+        data = self.client.get(self.url, **SPA).json()
+        self.assertEqual((data["ok"], data["tab"]), (True, "profile"))
+        self.assertIn("data-queue-position>3<", data["html"])
+        self.assertNotIn("app-header", data["html"])
 
     def test_staff_canPreviewAnotherUserById(self):
         html = self.client.get(self.url, {"user": self.client_user.pk}).content.decode()
 
-        self.assertIn(f"Usuário <strong>{self.client_user.username}</strong>", html)
+        self.assertIn(f"<dt>Usuário:</dt><dd>{self.client_user.username}</dd>", html)
+        self.assertIn(f'value="{self.client_user.pk}"', html)
         self.assertIn("data-queue-position>3<", html)
 
     def test_unknownUser_isNotFound(self):
@@ -1025,7 +1033,7 @@ class StaffQueuePreviewTests(TestCase):
         html = self.client.get(self.url).content.decode()
 
         self.assertNotIn("Seu saque está na fila", html)
-        self.assertIn("não tem saque aguardando", html)
+        self.assertIn("Nenhum saque na fila", html)
 
     @override_settings(FRONTEND_WITHDRAW_QUEUE_PROVIDER="frontend.tests.fake_queue_position_zero")
     def test_invalidBackendData_saysThereIsNoCardAndKeepsThePageUsable(self):
