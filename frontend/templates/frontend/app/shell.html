@@ -31,14 +31,14 @@
     <a href="{% url 'frontend:home' %}" class="app-sidebar-logo" data-spa-link data-tab="home" aria-label="New Tractors — Início">
       <img src="{% static 'frontend/img/logo-new-tractors.png' %}" alt="" width="1851" height="850">
     </a>
-    <a href="{% url 'frontend:deposit' %}" class="app-sidebar-deposit" data-spa-link data-tab="deposit">
+    <a href="{% url 'frontend:deposit' %}" class="app-sidebar-deposit{% if home_only %} is-locked{% endif %}" data-spa-link data-tab="deposit"{% if home_only %} data-locked aria-disabled="true"{% endif %}>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="m8 12 4 4 4-4"/></svg>
-      Depositar Saldo
+      <span>Depositar Saldo</span>
     </a>
     <nav class="app-sidebar-nav" aria-label="Navegação principal">
       {% for item in sidebar_items %}
-        <a href="{% url item.url_name %}" class="app-side-link{% if item.key == app_tab %} is-active{% endif %}" data-spa-link data-tab="{{ item.key }}"
-           {% if item.key == app_tab %}aria-current="page"{% endif %}>
+        <a href="{% url item.url_name %}" class="app-side-link{% if item.key == app_tab %} is-active{% endif %}{% if item.locked %} is-locked{% endif %}" data-spa-link data-tab="{{ item.key }}"
+           {% if item.key == app_tab %}aria-current="page"{% endif %}{% if item.locked %} data-locked aria-disabled="true"{% endif %}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             {% if item.key == 'home' %}<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             {% elif item.key == 'team' %}<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
@@ -213,13 +213,18 @@
 
   {% include "frontend/app/_welcome_modals.html" %}
 
+  {# Bloqueio temporário (FRONTEND_ONLY_HOME): aberto pelo lock.js ao tocar em qualquer [data-locked]. #}
+  {% if area_lock %}
+    {% include "frontend/_notice_modal.html" with modal_id="areaLockedModal" notice=area_lock %}
+  {% endif %}
+
   <!-- Navbar fixa (5 abas) -->
   <nav class="app-tabbar" aria-label="Navegação principal">
     <div class="app-tabbar-inner">
       {% for tab in app_tabs %}
         <a href="{% url tab.url_name %}" data-spa-link data-tab="{{ tab.key }}"
-           class="app-tab{% if tab.key == 'deposit' %} app-tab-deposit{% endif %}{% if tab.key == app_tab %} is-active{% endif %}"
-           {% if tab.key == app_tab %}aria-current="page"{% endif %}>
+           class="app-tab{% if tab.key == 'deposit' %} app-tab-deposit{% endif %}{% if tab.key == app_tab %} is-active{% endif %}{% if tab.locked %} is-locked{% endif %}"
+           {% if tab.key == app_tab %}aria-current="page"{% endif %}{% if tab.locked %} data-locked aria-disabled="true"{% endif %}>
           <span class="{% if tab.key == 'deposit' %}app-tab-deposit-circle{% else %}app-tab-icon{% endif %}" aria-hidden="true">
             {% if tab.key == 'home' %}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -260,6 +265,7 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script src="{% static 'frontend/js/lock.js' %}" defer></script>
   <script src="{% static 'frontend/js/app.js' %}" defer></script>
   <script src="{% static 'frontend/js/home.js' %}" defer></script>
   <script src="{% static 'frontend/js/withdraw.js' %}" defer></script>

@@ -104,6 +104,27 @@ def auth_locked():
     return getattr(settings, "FRONTEND_AUTH_LOCKED", True)
 
 
+def home_only():
+    """Bloqueio temporário (FRONTEND_ONLY_HOME): só o que é marcado com `open_when_home_only` responde."""
+    return getattr(settings, "FRONTEND_ONLY_HOME", False)
+
+
+# Aviso ao tocar numa aba/botão bloqueado (modal) e resposta das ações bloqueadas (JSON 503).
+AREA_LOCK_NOTICE = {
+    "title": "Área temporariamente indisponível",
+    "message": "Esta área da plataforma está indisponível no momento. Acompanhe nossos canais de comunicação "
+               "oficiais para saber quando ela for liberada.",
+}
+AREA_LOCKED_MESSAGE = "Esta área está temporariamente indisponível."
+HOME_ONLY_OPEN_TABS = {"home"}
+
+
+def nav_items(items):
+    """Itens da navbar/menu lateral com `locked` marcado nas abas fechadas pelo bloqueio."""
+    locked = home_only()
+    return [{**item, "locked": locked and item["key"] not in HOME_ONLY_OPEN_TABS} for item in items]
+
+
 def login_autocreate_enabled():
     # Ligado em preview/settings.py pela env FRONTEND_LOGIN_AUTOCREATE=1 (local ou Render).
     return getattr(settings, "FRONTEND_LOGIN_AUTOCREATE", False)
@@ -252,6 +273,14 @@ class AppPageView(LoginRequiredMixin, TemplateView):
     title = None
     page_template = None
     template_name = "frontend/app/shell.html"
+    # Bloqueio temporário (FRONTEND_ONLY_HOME): fechada por padrão; só a tela que liga isto continua abrindo.
+    open_when_home_only = False
+
+    def dispatch(self, request, *args, **kwargs):
+        if home_only() and not self.open_when_home_only:
+            # Link direto, F5 ou navegação SPA: volta para o Início (o app.js segue o redirect com carga completa).
+            return HttpResponseRedirect(reverse("frontend:home"))
+        return super().dispatch(request, *args, **kwargs)
 
     def handle_no_permission(self):
         # Sessão expirada no meio da navegação SPA: o JS faz a ida ao login com carga completa.
@@ -264,13 +293,16 @@ class AppPageView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context.update({
             "app_tab": self.tab,
-            "app_tabs": APP_TABS,
-            "sidebar_items": SIDEBAR_ITEMS,
+            "app_tabs": nav_items(APP_TABS),
+            "sidebar_items": nav_items(SIDEBAR_ITEMS),
             "page_title": self.title,
             "page_template": self.page_template,
             "statement_filters": STATEMENT_FILTER_LABELS,
+            "home_only": home_only(),
             **channel_context(),
         })
+        if context["home_only"]:
+            context["area_lock"] = AREA_LOCK_NOTICE
         if not is_spa_request(self.request):
             # Cabeçalho e modais de boas-vindas só existem na casca; numa troca de aba já estão na página.
             context["header"] = {**user_display(self.request.user), **get_header_state(self.request.user)}
@@ -289,6 +321,8 @@ class AppPageView(LoginRequiredMixin, TemplateView):
 
 class HomeView(AppPageView):
     """Aba Início: card "Meu Patrimônio" com os saldos do usuário."""
+
+    open_when_home_only = True
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -411,11 +445,15 @@ class HomeActionView(LoginRequiredMixin, View):
     """Base: login obrigatório (401 JSON), só POST com CSRF (middleware), erros sem stack trace."""
 
     http_method_names = ["post"]
+    # Bloqueio temporário (FRONTEND_ONLY_HOME): fechada por padrão; só as ações do Início ligam isto.
+    open_when_home_only = False
 
     def handle_no_permission(self):
         return JsonResponse({"ok": False, "message": "Sua sessão expirou. Entre novamente."}, status=401)
 
     def post(self, request, *args, **kwargs):
+        if home_only() and not self.open_when_home_only:
+            return JsonResponse({"ok": False, "locked": True, "message": AREA_LOCKED_MESSAGE}, status=503)
         try:
             status, payload = self.perform(request, *args, **kwargs)
         except Exception:  # noqa: BLE001 — registra e responde genérico; nunca vaza detalhe interno
@@ -434,6 +472,8 @@ class HomeActionView(LoginRequiredMixin, View):
 
 
 class CheckinActionView(HomeActionView):
+    open_when_home_only = True
+
     def perform(self, request):
         result = run_action("FRONTEND_CHECKIN_ACTION", request.user)
         if not result.get("ok"):
@@ -445,6 +485,8 @@ class CheckinActionView(HomeActionView):
 
 
 class BonusActionView(HomeActionView):
+    open_when_home_only = True
+
     def perform(self, request):
         code = re.sub(r"\s+", "", request.POST.get("code", "")).upper()
         if not code:
@@ -458,6 +500,7 @@ class BonusActionView(HomeActionView):
 
 
 class RouletteActionView(HomeActionView):
+    open_when_home_only = True
     SEGMENTS = 7
 
     def perform(self, request):
@@ -471,6 +514,8 @@ class RouletteActionView(HomeActionView):
 
 
 class PurchaseActionView(HomeActionView):
+    open_when_home_only = True
+
     def perform(self, request, product_id):
         if product_id not in {p["id"] for p in get_products(request.user)}:
             return 404, {"ok": False, "message": "Equipamento não encontrado."}
@@ -676,6 +721,8 @@ class StatementView(LoginRequiredMixin, View):
         return JsonResponse({"ok": False, "message": "Sua sessão expirou. Entre novamente."}, status=401)
 
     def get(self, request):
+        if home_only():  # o Extrato fica fechado no bloqueio (modal do Início e página /extrato)
+            return JsonResponse({"ok": False, "locked": True, "message": AREA_LOCKED_MESSAGE}, status=503)
         filter_key = request.GET.get("filtro", "all")
         if filter_key not in FILTER_KINDS:
             filter_key = "all"
@@ -768,6 +815,8 @@ class NotificationsView(LoginRequiredMixin, View):
 
 
 class NotificationsReadView(HomeActionView):
+    open_when_home_only = True  # o sino continua liberado no bloqueio
+
     def perform(self, request):
         result = run_action("FRONTEND_NOTIFICATIONS_READ_ACTION", request.user)
         return 200, {"ok": bool(result.get("ok")), **({"message": result["message"]} if result.get("message") else {})}
@@ -816,6 +865,7 @@ class PasswordChangeActionView(HomeActionView):
 
 
 class RecruitActionView(HomeActionView):
+    open_when_home_only = True
     MAX_LENGTH = 500
 
     def perform(self, request):

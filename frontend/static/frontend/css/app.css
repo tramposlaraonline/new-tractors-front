@@ -468,3 +468,75 @@
     outline-offset: 2px;
   }
 }
+
+/* =========================================
+   BLOQUEIO TEMPORÁRIO (FRONTEND_ONLY_HOME)
+   [data-locked]: apagado, em cinza e com cadeado; o toque abre o aviso (lock.js).
+   .is-locked = abas, menu lateral e atalhos (selo no canto). .is-locked-inline = links de texto.
+   ========================================= */
+:root {
+  --lock-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='11' x='3' y='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E");
+  --lock-icon-white: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='11' x='3' y='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E");
+}
+
+.is-locked {
+  position: relative;
+  filter: grayscale(1);
+}
+
+.is-locked > * {
+  opacity: 0.5;
+}
+
+.is-locked::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--forest-950) var(--lock-icon-white) center / 10px no-repeat;
+  box-shadow: 0 0 0 2px #FFFFFF;
+  pointer-events: none;
+}
+
+/* Navbar: selo no canto do ícone (Depositar: no canto do círculo elevado). */
+.app-tab.is-locked::before {
+  top: 4px;
+  right: calc(50% - 24px);
+  width: 15px;
+  height: 15px;
+  background-size: 8px;
+}
+
+.app-tab-deposit.is-locked::before {
+  top: -20px;
+  right: calc(50% - 30px);
+}
+
+.app-side-link.is-locked::before,
+.app-sidebar-deposit.is-locked::before {
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+}
+
+.is-locked-inline {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.is-locked-inline::before {
+  content: "";
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 6px;
+  vertical-align: -0.1em;
+  background-color: currentColor;
+  -webkit-mask: var(--lock-icon) center / contain no-repeat;
+  mask: var(--lock-icon) center / contain no-repeat;
+}

@@ -1434,3 +1434,107 @@ class ChannelsAndWelcomeTests(TestCase):
         self.assertRedirects(self.client.get(url), reverse("admin:frontend_communicationchannels_add"))
         self.set_channels(support_whatsapp="https://wa.me/1")
         self.assertRedirects(self.client.get(url), reverse("admin:frontend_communicationchannels_change", args=[1]))
+
+# Bloqueio temporário: só o Início (e as ações dele) responde; o resto é fechado por padrão no servidor.
+HOME_ONLY_BLOCKED_PAGES = [("frontend:team", {}), ("frontend:deposit", {}),
+                           ("frontend:deposit_payment", {"charge_id": "abc123"}), ("frontend:purchases", {}),
+                           ("frontend:profile", {}), ("frontend:statement_page", {}), ("frontend:withdraw", {}),
+                           ("frontend:withdraw_history", {})]
+HOME_ONLY_BLOCKED_ACTIONS = [("frontend:action_withdraw", {}), ("frontend:action_cpf", {}),
+                             ("frontend:action_deposit", {}), ("frontend:action_deposit_status", {"charge_id": "abc123"}),
+                             ("frontend:action_pix_key", {}), ("frontend:action_password", {})]
+HOME_ONLY_OPEN_ACTIONS = [("frontend:action_checkin", {}), ("frontend:action_bonus", {}),
+                          ("frontend:action_roulette", {}), ("frontend:action_recruit", {}),
+                          ("frontend:action_purchase", {"product_id": "t1"}), ("frontend:notifications_read", {})]
+
+
+@override_settings(FRONTEND_ONLY_HOME=True)
+class HomeOnlyTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username="11987654321", password="s3nha-forte")
+        self.client.force_login(self.user)
+
+    def test_home_still_opens_with_lock_notice_ready(self):
+        res = self.client.get(reverse("frontend:home"))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'id="areaLockedModal" role="dialog"')
+        self.assertContains(res, "Área temporariamente indisponível")
+        self.assertContains(res, "frontend/js/lock.js")
+
+    def test_other_tabs_and_home_shortcuts_are_marked_locked(self):
+        html = self.client.get(reverse("frontend:home")).content.decode()
+        # Navbar: as 4 abas fora o Início; menu lateral: "Depositar Saldo" + 4 itens; Início: Depositar, Sacar, Extrato.
+        self.assertEqual(len(re.findall(r'class="app-tab[^"]*is-locked"', html)), 4)
+        self.assertEqual(len(re.findall(r'class="app-side-link[^"]*is-locked"', html)), 4)
+        self.assertIn('class="app-sidebar-deposit is-locked"', html)
+        self.assertEqual(len(re.findall(r'class="home-action[^"]*is-locked"', html)), 3)
+        self.assertRegex(html, r'data-tab="home"\s+class="app-tab is-active"\s+aria-current="page">')
+        self.assertNotRegex(html, r'data-tab="home"[^>]*data-locked')
+        # Links para áreas fechadas dentro dos modais do Início (depósito na ativação, "Ver Minhas Compras").
+        self.assertEqual(html.count('is-locked-inline'), 3)
+        # Cada elemento marcado abre o aviso (lock.js) e é anunciado como indisponível.
+        self.assertEqual(html.count(" data-locked"), html.count('aria-disabled="true"'))
+
+    def test_blocked_pages_redirect_to_home_on_full_load_and_spa(self):
+        for name, kwargs in HOME_ONLY_BLOCKED_PAGES:
+            for extra in ({}, SPA):
+                with self.subTest(page=name, spa=bool(extra)):
+                    res = self.client.get(reverse(name, kwargs=kwargs), **extra)
+                    self.assertRedirects(res, reverse("frontend:home"), fetch_redirect_response=False)
+
+    def test_anonymous_on_blocked_page_ends_on_login_without_the_page(self):
+        self.client.logout()
+        res = self.client.get(reverse("frontend:deposit"), follow=True)
+        self.assertEqual(res.redirect_chain[-1][0], reverse("frontend:login") + "?next=/")
+
+    def test_blocked_actions_are_refused_before_reaching_the_backend(self):
+        with mock.patch("frontend.views.run_action") as run:
+            for name, kwargs in HOME_ONLY_BLOCKED_ACTIONS:
+                with self.subTest(action=name):
+                    res = self.client.post(reverse(name, kwargs=kwargs),
+                                           {"amount": "50", "cpf": "52998224725", "key_type": "cpf",
+                                            "key": "52998224725", "current_password": "s3nha-forte",
+                                            "new_password": "nova-s3nha-9", "new_password_confirmation": "nova-s3nha-9"},
+                                           HTTP_X_IDEMPOTENCY_KEY="key-12345678")
+                    self.assertEqual(res.status_code, 503)
+                    self.assertEqual(res.json(), {"ok": False, "locked": True,
+                                                  "message": "Esta área está temporariamente indisponível."})
+        run.assert_not_called()
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("s3nha-forte"))  # troca de senha não passou
+
+    def test_home_actions_keep_working(self):
+        with mock.patch("frontend.views.run_action", return_value={"ok": False, "message": "regra"}) as run:
+            for name, kwargs in HOME_ONLY_OPEN_ACTIONS:
+                with self.subTest(action=name):
+                    res = self.client.post(reverse(name, kwargs=kwargs), {"code": "ABC"},
+                                           HTTP_X_IDEMPOTENCY_KEY="key-12345678")
+                    self.assertNotEqual(res.status_code, 503)
+                    self.assertNotIn("locked", res.json())
+        self.assertTrue(run.called)
+
+    def test_statement_is_locked_but_notifications_stay_open(self):
+        res = self.client.get(reverse("frontend:statement"))
+        self.assertEqual(res.status_code, 503)
+        self.assertTrue(res.json()["locked"])
+        self.assertEqual(self.client.get(reverse("frontend:notifications")).status_code, 200)
+
+    def test_actions_still_require_login_first(self):
+        self.client.logout()
+        self.assertEqual(self.client.post(reverse("frontend:action_withdraw")).status_code, 401)
+
+    @override_settings(FRONTEND_ONLY_HOME=False)
+    def test_off_changes_nothing(self):
+        html = self.client.get(reverse("frontend:home")).content.decode()
+        self.assertNotIn("data-locked", html)
+        self.assertNotIn("is-locked", html)
+        self.assertNotIn("areaLockedModal", html)
+        for name, kwargs in HOME_ONLY_BLOCKED_PAGES:
+            with self.subTest(page=name):
+                self.assertNotEqual(self.client.get(reverse(name, kwargs=kwargs)).status_code, 302)
+
+    @override_settings()
+    def test_off_when_setting_is_missing(self):
+        from django.conf import settings
+        del settings.FRONTEND_ONLY_HOME
+        self.assertEqual(self.client.get(reverse("frontend:team")).status_code, 200)

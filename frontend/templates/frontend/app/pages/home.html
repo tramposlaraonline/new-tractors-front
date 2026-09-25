@@ -45,19 +45,19 @@
 
   <!-- Atalhos -->
   <nav class="home-actions" aria-label="Atalhos">
-    <a href="{% url 'frontend:deposit' %}" class="home-action home-action-primary" data-spa-link data-tab="deposit">
+    <a href="{% url 'frontend:deposit' %}" class="home-action home-action-primary{% if home_only %} is-locked{% endif %}" data-spa-link data-tab="deposit"{% if home_only %} data-locked aria-disabled="true"{% endif %}>
       <span class="home-action-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="m8 12 4 4 4-4"/></svg>
       </span>
       <span class="home-action-text"><strong>Depositar</strong><small>Via Pix rápido</small></span>
     </a>
-    <a href="{% url 'frontend:withdraw' %}" class="home-action" data-spa-link data-tab="profile">
+    <a href="{% url 'frontend:withdraw' %}" class="home-action{% if home_only %} is-locked{% endif %}" data-spa-link data-tab="profile"{% if home_only %} data-locked aria-disabled="true"{% endif %}>
       <span class="home-action-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4"/><path d="M12 16V8"/></svg>
       </span>
       <span class="home-action-text"><strong>Sacar</strong><small>Chave Pix</small></span>
     </a>
-    <button type="button" class="home-action" data-open-statement="all">
+    <button type="button" class="home-action{% if home_only %} is-locked{% endif %}" data-open-statement="all"{% if home_only %} data-locked aria-disabled="true"{% endif %}>
       <span class="home-action-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
       </span>
@@ -342,7 +342,7 @@
           </p>
           <p class="act-missing" data-act-missing hidden>
             <span>Saldo insuficiente. Faltam <strong data-act-missing-value></strong>.</span>
-            <a href="{% url 'frontend:deposit' %}" data-act-deposit-link data-spa-link data-tab="deposit" data-close-modal>Depositar Pix →</a>
+            <a href="{% url 'frontend:deposit' %}" data-act-deposit-link data-spa-link data-tab="deposit" data-close-modal{% if home_only %} class="is-locked-inline" data-locked aria-disabled="true"{% endif %}>Depositar Pix →</a>
           </p>
         </div>
         <label class="act-agree">
@@ -352,7 +352,7 @@
         <div class="act-actions">
           <button type="button" class="act-secondary" data-close-modal data-act-cancel>Cancelar</button>
           <button type="button" class="act-primary" data-act-confirm>Confirmar Ativação →</button>
-          <a href="{% url 'frontend:deposit' %}" class="act-primary" data-act-deposit data-spa-link data-tab="deposit" data-close-modal hidden>Fazer Depósito Pix →</a>
+          <a href="{% url 'frontend:deposit' %}" class="act-primary{% if home_only %} is-locked-inline{% endif %}" data-act-deposit data-spa-link data-tab="deposit" data-close-modal{% if home_only %} data-locked aria-disabled="true"{% endif %} hidden>Fazer Depósito Pix →</a>
         </div>
       </div>
     </div>
@@ -435,7 +435,7 @@
         <h3>Equipamento Ativado com Sucesso!</h3>
         <p>Parabéns! Seu equipamento foi ativado e seus rendimentos diários começarão a ser gerados automaticamente.</p>
         <p class="purchase-spin" data-purchase-spins hidden><span aria-hidden="true">🎡</span><span data-purchase-spins-text></span></p>
-        <a href="{% url 'frontend:purchases' %}" class="purchase-btn" data-spa-link data-tab="purchases" data-close-modal>Ver Minhas Compras →</a>
+        <a href="{% url 'frontend:purchases' %}" class="purchase-btn{% if home_only %} is-locked-inline{% endif %}" data-spa-link data-tab="purchases" data-close-modal{% if home_only %} data-locked aria-disabled="true"{% endif %}>Ver Minhas Compras →</a>
       </div>
     </div>
   </div>

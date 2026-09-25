@@ -119,6 +119,10 @@ if _LOGIN_AUTOCREATE:
     FRONTEND_AUTH_LOCKED = False
 # --------------------------------------------------------------------------
 
+# Bloqueio temporário: só o Início (e as ações dele) fica liberado; as outras abas mostram cadeado
+# e o servidor recusa as telas/ações delas. Liga com a env FRONTEND_ONLY_HOME=1 (local ou Render).
+FRONTEND_ONLY_HOME = os.environ.get("FRONTEND_ONLY_HOME") == "1"
+
 # Dados fictícios para o preview (no projeto real, apontar para os serviços de verdade).
 FRONTEND_WALLET_PROVIDER = "preview.demo_data.wallet_summary"
 FRONTEND_HEADER_PROVIDER = "preview.demo_data.header_state"
