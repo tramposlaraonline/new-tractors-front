@@ -48,7 +48,11 @@
     </div>
     <div class="profile-balance">
       <p class="home-balance-label home-balance-label-invest">Saldo para investir</p>
-      <p class="profile-balance-value" data-wallet="invest_balance">{{ wallet.invest_balance|brl }}</p>
+      {% if balance_recalc %}
+        <p class="profile-balance-value">{% include "frontend/app/_balance_recalc.html" %}</p>
+      {% else %}
+        <p class="profile-balance-value" data-wallet="invest_balance">{{ wallet.invest_balance|brl }}</p>
+      {% endif %}
       <p class="profile-balance-note">Disponível para ativação de equipamentos</p>
     </div>
     <div class="profile-balance">

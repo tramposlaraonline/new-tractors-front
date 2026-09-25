@@ -217,6 +217,10 @@
   {% if area_lock %}
     {% include "frontend/_notice_modal.html" with modal_id="areaLockedModal" notice=area_lock %}
   {% endif %}
+  {# Saldo em recálculo (FRONTEND_BALANCE_RECALC): aberto pelos botões "Ativar Equipamento" ([data-locked="recalcLockedModal"]). #}
+  {% if recalc_lock %}
+    {% include "frontend/_notice_modal.html" with modal_id="recalcLockedModal" notice=recalc_lock %}
+  {% endif %}
 
   <!-- Navbar fixa (5 abas) -->
   <nav class="app-tabbar" aria-label="Navegação principal">

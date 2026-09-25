@@ -119,6 +119,19 @@ AREA_LOCKED_MESSAGE = "Esta área está temporariamente indisponível."
 HOME_ONLY_OPEN_TABS = {"home"}
 
 
+def balance_recalc():
+    """Saldo em recálculo (FRONTEND_BALANCE_RECALC): esconde patrimônio e saldo para investir, trava a ativação."""
+    return getattr(settings, "FRONTEND_BALANCE_RECALC", False)
+
+
+RECALC_LOCK_NOTICE = {
+    "title": "Ativação temporariamente indisponível",
+    "message": "Estamos recalculando os saldos para investir. A ativação de equipamentos volta assim que o "
+               "recálculo terminar.",
+}
+RECALC_LOCKED_MESSAGE = "A ativação de equipamentos está indisponível enquanto recalculamos os saldos."
+
+
 def nav_items(items):
     """Itens da navbar/menu lateral com `locked` marcado nas abas fechadas pelo bloqueio."""
     locked = home_only()
@@ -299,10 +312,13 @@ class AppPageView(LoginRequiredMixin, TemplateView):
             "page_template": self.page_template,
             "statement_filters": STATEMENT_FILTER_LABELS,
             "home_only": home_only(),
+            "balance_recalc": balance_recalc(),
             **channel_context(),
         })
         if context["home_only"]:
             context["area_lock"] = AREA_LOCK_NOTICE
+        if context["balance_recalc"]:
+            context["recalc_lock"] = RECALC_LOCK_NOTICE
         if not is_spa_request(self.request):
             # Cabeçalho e modais de boas-vindas só existem na casca; numa troca de aba já estão na página.
             context["header"] = {**user_display(self.request.user), **get_header_state(self.request.user)}
@@ -433,11 +449,15 @@ def _money(value):
 def _balances(user):
     """Estado atualizado que o front aplica na tela depois de cada ação."""
     wallet = get_wallet_summary(user)
-    return {
-        "wallet": {key: brl(wallet[key]) for key in ("total_balance", "invest_balance", "withdraw_balance")},
-        "invest_balance_cents": _cents(wallet["invest_balance"]),
+    recalc = balance_recalc()  # patrimônio e saldo para investir ficam em "Recalculando saldo..." na tela
+    shown = ("withdraw_balance",) if recalc else ("total_balance", "invest_balance", "withdraw_balance")
+    payload = {
+        "wallet": {key: brl(wallet[key]) for key in shown},
         "spins_available": get_roulette_state(user)["spins_available"],
     }
+    if not recalc:
+        payload["invest_balance_cents"] = _cents(wallet["invest_balance"])
+    return payload
 
 
 @method_decorator(never_cache, name="dispatch")
@@ -517,6 +537,8 @@ class PurchaseActionView(HomeActionView):
     open_when_home_only = True
 
     def perform(self, request, product_id):
+        if balance_recalc():  # ninguém compra com um saldo que não consegue ver
+            return 503, {"ok": False, "locked": True, "message": RECALC_LOCKED_MESSAGE}
         if product_id not in {p["id"] for p in get_products(request.user)}:
             return 404, {"ok": False, "message": "Equipamento não encontrado."}
         key = request.headers.get("X-Idempotency-Key", "")

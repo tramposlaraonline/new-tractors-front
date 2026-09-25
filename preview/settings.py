@@ -123,6 +123,10 @@ if _LOGIN_AUTOCREATE:
 # e o servidor recusa as telas/ações delas. Liga com a env FRONTEND_ONLY_HOME=1 (local ou Render).
 FRONTEND_ONLY_HOME = os.environ.get("FRONTEND_ONLY_HOME") == "1"
 
+# Saldo em recálculo: "Meu Patrimônio" e "Saldo para investir" viram "Recalculando saldo..." (o saldo para
+# saque segue normal) e a ativação de equipamentos fica travada. Liga com a env FRONTEND_BALANCE_RECALC=1.
+FRONTEND_BALANCE_RECALC = os.environ.get("FRONTEND_BALANCE_RECALC") == "1"
+
 # Dados fictícios para o preview (no projeto real, apontar para os serviços de verdade).
 FRONTEND_WALLET_PROVIDER = "preview.demo_data.wallet_summary"
 FRONTEND_HEADER_PROVIDER = "preview.demo_data.header_state"

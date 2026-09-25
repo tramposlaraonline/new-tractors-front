@@ -1,6 +1,6 @@
 {% load static frontend_format %}
 {# Aba "Início" — fragmento trocado dentro do #appView. #}
-<section class="app-page home" data-page="home" aria-labelledby="page-title-home" data-invest-cents="{{ wallet.invest_balance|cents }}">
+<section class="app-page home" data-page="home" aria-labelledby="page-title-home"{% if not balance_recalc %} data-invest-cents="{{ wallet.invest_balance|cents }}"{% endif %}>
   <h1 id="page-title-home" class="visually-hidden">Início</h1>
 
   <div class="home-hero" aria-hidden="true">
@@ -10,7 +10,11 @@
   <!-- Card "Meu Patrimônio" -->
   <div class="home-wallet">
     <p class="home-wallet-label">Meu Patrimônio</p>
-    <p class="home-wallet-total" data-wallet="total_balance">{{ wallet.total_balance|brl }}</p>
+    {% if balance_recalc %}
+      <p class="home-wallet-total" role="status">{% include "frontend/app/_balance_recalc.html" %}</p>
+    {% else %}
+      <p class="home-wallet-total" data-wallet="total_balance">{{ wallet.total_balance|brl }}</p>
+    {% endif %}
 
     <div class="home-wallet-divider" role="presentation"></div>
 
@@ -18,7 +22,11 @@
     <div class="home-balance">
       <div class="home-balance-info">
         <p class="home-balance-label home-balance-label-invest">Saldo para investir</p>
-        <p class="home-balance-value" data-wallet="invest_balance">{{ wallet.invest_balance|brl }}</p>
+        {% if balance_recalc %}
+          <p class="home-balance-value">{% include "frontend/app/_balance_recalc.html" %}</p>
+        {% else %}
+          <p class="home-balance-value" data-wallet="invest_balance">{{ wallet.invest_balance|brl }}</p>
+        {% endif %}
       </div>
       <span class="home-balance-action home-balance-action-invest" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -202,7 +210,7 @@
                 <dd class="home-product-total">{{ product.total_credit|brl }}</dd>
               </div>
             </dl>
-            <button type="button" class="home-product-btn" data-activate
+            <button type="button" class="home-product-btn{% if balance_recalc %} is-locked-inline{% endif %}" data-activate{% if balance_recalc %} data-locked="recalcLockedModal" aria-disabled="true"{% endif %}
                     data-purchase-url="{% url 'frontend:action_purchase' product.id %}" data-code="{{ product.code }}"
                     data-price-cents="{{ product.price|cents }}" data-daily-cents="{{ product.daily_credit|cents }}"
                     data-total-cents="{{ product.total_credit|cents }}" data-days="{{ product.period_days }}">

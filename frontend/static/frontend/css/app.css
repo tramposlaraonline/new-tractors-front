@@ -540,3 +540,41 @@
   -webkit-mask: var(--lock-icon) center / contain no-repeat;
   mask: var(--lock-icon) center / contain no-repeat;
 }
+
+/* =========================================
+   SALDO EM RECÁLCULO (FRONTEND_BALANCE_RECALC)
+   "Recalculando saldo..." no lugar do valor (Início, Perfil, Depositar). Herda a cor do cartão.
+   ========================================= */
+.balance-recalc {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0;
+  opacity: 0.9;
+}
+
+.home-wallet-total .balance-recalc {
+  font-size: 20px;
+}
+
+.balance-recalc-spinner {
+  flex-shrink: 0;
+  width: 0.9em;
+  height: 0.9em;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  opacity: 0.8;
+  animation: balanceRecalcSpin 0.9s linear infinite;
+}
+
+@keyframes balanceRecalcSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .balance-recalc-spinner { animation: none; }
+}

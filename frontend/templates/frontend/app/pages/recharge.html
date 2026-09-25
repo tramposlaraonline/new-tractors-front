@@ -14,7 +14,11 @@
   <div class="wd-balance dp-balance">
     <div>
       <p class="wd-balance-label">Saldo para investir</p>
-      <p class="wd-balance-value" data-wallet="invest_balance">{{ wallet.invest_balance|brl }}</p>
+      {% if balance_recalc %}
+        <p class="wd-balance-value">{% include "frontend/app/_balance_recalc.html" %}</p>
+      {% else %}
+        <p class="wd-balance-value" data-wallet="invest_balance">{{ wallet.invest_balance|brl }}</p>
+      {% endif %}
       <p class="wd-balance-note">Disponível para ativar novos equipamentos</p>
     </div>
     <span class="dp-balance-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></svg></span>

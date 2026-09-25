@@ -1538,3 +1538,94 @@ class HomeOnlyTests(TestCase):
         from django.conf import settings
         del settings.FRONTEND_ONLY_HOME
         self.assertEqual(self.client.get(reverse("frontend:team")).status_code, 200)
+
+
+# Saldo em recálculo: patrimônio e saldo para investir escondidos em todo lugar; saque segue normal.
+def fake_wallet_distinct(user):
+    from decimal import Decimal
+    # Valores que não aparecem em nenhum outro lugar da página: se vazarem, o teste pega.
+    return {"invest_balance": Decimal("777.30"), "withdraw_balance": Decimal("41.90")}
+
+
+RECALC_LEAKS = ("777,30", "819,20", "77730", "81920")  # invest, total (brl) e em centavos
+
+
+@override_settings(FRONTEND_BALANCE_RECALC=True, FRONTEND_ONLY_HOME=False,
+                   FRONTEND_WALLET_PROVIDER="frontend.tests.fake_wallet_distinct")
+class BalanceRecalcTests(TestCase):
+    def setUp(self):
+        CALLS.clear()
+        self.user = get_user_model().objects.create_user(username="11987654321", password="s3nha-forte")
+        self.client.force_login(self.user)
+
+    def assert_no_leak(self, text):
+        for value in RECALC_LEAKS:
+            self.assertNotIn(value, text)
+
+    def test_home_hides_total_and_invest_but_keeps_withdraw(self):
+        for extra in ({}, SPA):
+            with self.subTest(spa=bool(extra)):
+                res = self.client.get(reverse("frontend:home"), **extra)
+                html = res.json()["html"] if extra else res.content.decode()
+                self.assertEqual(html.count("Recalculando saldo..."), 2)
+                self.assertIn('data-wallet="withdraw_balance">R$ 41,90</p>', html)
+                # Sem data-wallet nos dois: o home.js não troca a mensagem por número depois de uma ação.
+                self.assertNotIn('data-wallet="total_balance"', html)
+                self.assertNotIn('data-wallet="invest_balance"', html)
+                self.assertNotIn("data-invest-cents", html)
+                self.assert_no_leak(html)
+
+    def test_profile_and_deposit_also_hide_invest(self):
+        for name in ("frontend:profile", "frontend:deposit"):
+            with self.subTest(page=name):
+                html = self.client.get(reverse(name)).content.decode()
+                self.assertIn("Recalculando saldo...", html)
+                self.assertNotIn('data-wallet="invest_balance"', html)
+                self.assert_no_leak(html)
+
+    def test_activate_buttons_are_locked_with_their_own_notice(self):
+        html = self.client.get(reverse("frontend:home")).content.decode()
+        buttons = len(re.findall(r'class="home-product-btn', html))
+        self.assertGreater(buttons, 0)
+        self.assertEqual(html.count('data-locked="recalcLockedModal"'), buttons)
+        self.assertContains(self.client.get(reverse("frontend:home")), 'id="recalcLockedModal" role="dialog"')
+        self.assertIn("Ativação temporariamente indisponível", html)
+
+    @override_settings(FRONTEND_PURCHASE_ACTION="frontend.tests.fake_purchase")
+    def test_purchase_is_refused_on_the_server(self):
+        res = self.client.post(reverse("frontend:action_purchase", kwargs={"product_id": "t1"}),
+                               HTTP_X_IDEMPOTENCY_KEY="key-12345678")
+        self.assertEqual(res.status_code, 503)
+        self.assertEqual(res.json(), {"ok": False, "locked": True, "message":
+                                      "A ativação de equipamentos está indisponível enquanto recalculamos os saldos."})
+        self.assertEqual(CALLS, [])
+
+    @override_settings(FRONTEND_CHECKIN_ACTION="frontend.tests.fake_ok_checkin")
+    def test_action_response_only_updates_withdraw_balance(self):
+        data = self.client.post(reverse("frontend:action_checkin")).json()
+        self.assertTrue(data["ok"])
+        self.assertEqual(data["wallet"], {"withdraw_balance": "R$ 41,90"})
+        self.assertNotIn("invest_balance_cents", data)
+        self.assert_no_leak(str(data))
+
+    @override_settings(FRONTEND_ONLY_HOME=True)
+    def test_works_together_with_home_only_lock(self):
+        html = self.client.get(reverse("frontend:home")).content.decode()
+        self.assertIn('id="areaLockedModal"', html)
+        self.assertIn('id="recalcLockedModal"', html)
+        self.assertEqual(html.count("Recalculando saldo..."), 2)
+
+    @override_settings(FRONTEND_BALANCE_RECALC=False)
+    def test_off_shows_values_as_before(self):
+        html = self.client.get(reverse("frontend:home")).content.decode()
+        self.assertNotIn("Recalculando saldo", html)
+        self.assertNotIn("recalcLockedModal", html)
+        self.assertIn('data-wallet="total_balance">R$ 819,20</p>', html)
+        self.assertIn('data-wallet="invest_balance">R$ 777,30</p>', html)
+        self.assertIn('data-invest-cents="77730"', html)
+
+    @override_settings()
+    def test_off_when_setting_is_missing(self):
+        from django.conf import settings
+        del settings.FRONTEND_BALANCE_RECALC
+        self.assertNotContains(self.client.get(reverse("frontend:home")), "Recalculando saldo")
