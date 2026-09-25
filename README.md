@@ -56,6 +56,11 @@ Reconstrução do front-end do new-tractors.com a partir do HTML salvo do login 
    - Notificações (sino): `FRONTEND_NOTIFICATIONS_PROVIDER(user, offset, limit)` e `FRONTEND_NOTIFICATIONS_READ_ACTION(user)`.
    - Extrato consolidado (`/extrato`): `FRONTEND_STATEMENT_SUMMARY_PROVIDER(user)` (totais e contagem por filtro).
    - Histórico de saques (`/withdraw/history`): `FRONTEND_WITHDRAW_HISTORY_PROVIDER(user)`.
+   - Fila de saque (cartão no `/withdraw`, consultado a cada 15s em `/acoes/saque/fila`):
+     `FRONTEND_WITHDRAW_QUEUE_PROVIDER(user)` → `None` ou `{"position", "amount", "requested_at", "entry_position"?}`.
+     **A posição tem que ser calculada na mesma base que registra os pagamentos** (1 + saques não pagos criados
+     antes deste) e só cai quando um saque da frente é pago. Nunca um número fixo, estimado ou inflado.
+     Sem a setting, o cartão não aparece. Posição inválida esconde o cartão e vai para o log.
    - Check-in: `FRONTEND_CHECKIN_ACTION` pode devolver `amount` → abre o modal "Check-in realizado!".
    - Processo seletivo: `FRONTEND_RECRUIT_ACTION(user, message)`.
    - **Links de suporte e comunidade: Django admin → "Links de atendimento e comunidade"** (registro único,

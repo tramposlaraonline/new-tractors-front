@@ -1,0 +1,50 @@
+{% load frontend_format %}
+{# Cartão da fila de saque (só aparece com FRONTEND_WITHDRAW_QUEUE_PROVIDER e um saque aguardando). #}
+{# Posição e barra vêm do backend; o withdraw.js consulta /acoes/saque/fila e anima quando a fila anda. #}
+{% if queue %}
+<section class="wq" data-withdraw-queue data-queue-url="{% url 'frontend:action_withdraw_queue' %}"
+         data-position="{{ queue.position }}" aria-labelledby="withdrawQueueTitle">
+  <div class="wq-head">
+    <span class="wq-live" aria-hidden="true"></span>
+    <div class="wq-head-text">
+      <h2 id="withdrawQueueTitle">Seu saque está na fila</h2>
+      {% if queue.requested_at %}<p>Pedido em {{ queue.requested_at|date:"d/m \à\s H:i" }}</p>{% endif %}
+    </div>
+    <p class="wq-amount">{{ queue.amount|brl }}</p>
+  </div>
+
+  <div class="wq-spot">
+    <p class="wq-spot-label">Sua posição</p>
+    <p class="wq-spot-value"><span class="wq-num" data-queue-position>{{ queue.position_display }}</span><span class="wq-ord">º</span></p>
+    <p class="wq-ahead"><span data-queue-ahead>{{ queue.ahead_label }}</span> <span class="wq-moved" data-queue-moved hidden></span></p>
+  </div>
+
+  <div class="wq-track-wrap" data-queue-track{% if queue.progress_pct is None %} hidden{% endif %}>
+    <div class="wq-track" role="progressbar" aria-label="Avanço da fila à sua frente" aria-valuemin="0"
+         aria-valuemax="100" aria-valuenow="{{ queue.progress_pct|default_if_none:0 }}" data-queue-progress
+         style="--wq-pct: {{ queue.progress_pct|default_if_none:0 }}">
+      <span class="wq-harvested" aria-hidden="true"></span>
+      <span class="wq-tractor" aria-hidden="true">
+        <svg viewBox="0 0 36 28">
+          <rect x="17" y="12" width="15" height="7" rx="2" fill="#2F6F4E"/>
+          <rect x="27" y="6" width="2.4" height="7" rx="1" fill="#173F35"/>
+          <path d="M8 19V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v13z" fill="#D6A94E"/>
+          <rect x="10.5" y="6.5" width="6" height="6" rx="1" fill="#FFFEFA" opacity="0.9"/>
+          <g class="wq-wheel" style="transform-origin: 11px 20px"><circle cx="11" cy="20" r="7" fill="#173F35"/><circle cx="11" cy="20" r="2.6" fill="#D6A94E"/><path d="M11 13.6v12.8M4.6 20h12.8" stroke="#2F6F4E" stroke-width="1.4"/></g>
+          <g class="wq-wheel" style="transform-origin: 28px 22.5px"><circle cx="28" cy="22.5" r="4.5" fill="#173F35"/><circle cx="28" cy="22.5" r="1.6" fill="#D6A94E"/><path d="M28 18.5v8M24 22.5h8" stroke="#2F6F4E" stroke-width="1.2"/></g>
+        </svg>
+      </span>
+      <span class="wq-flag" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22V3"/><path d="M5 4h12l-2.5 4L17 12H5"/></svg>
+      </span>
+    </div>
+    <p class="wq-cleared" data-queue-cleared>{{ queue.cleared_label }}</p>
+  </div>
+
+  <p class="wq-foot">
+    <span data-queue-updated>Atualizado agora</span>
+    <span class="wq-foot-note">A posição atualiza sozinha e só anda quando um saque à sua frente é pago.</span>
+  </p>
+  <p class="visually-hidden" aria-live="polite" data-queue-announce></p>
+</section>
+{% endif %}

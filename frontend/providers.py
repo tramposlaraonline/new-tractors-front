@@ -47,7 +47,7 @@ def get_demo_withdraw(user):
     """Saldo para saque de DEMONSTRAÇÃO, ou None quando FRONTEND_DEMO_WITHDRAW_PROVIDER não está configurado.
 
     O provider devolve {"balance": Decimal, "rate_per_hour": Decimal}; o Início mostra o valor subindo a cada
-    3s a partir daí, sempre com o selo "Demonstração — valores fictícios".
+    3s a partir daí, sempre com o selo "Os valores estão sendo calculados...".
     """
     path = getattr(settings, "FRONTEND_DEMO_WITHDRAW_PROVIDER", None)
     if not path:
@@ -159,6 +159,72 @@ def get_withdraw_state(user):
                        "status_label": item.get("status_label") or label, "tone": tone})
     return {**data, "pix_key": key, "recent": recent,
             "fee_percent": Decimal(data["fee_percent"]), "min_amount": Decimal(data["min_amount"])}
+
+
+# =========================================================================
+# FILA DE SAQUE (cartão na tela /withdraw, atualizado sozinho)
+#   FRONTEND_WITHDRAW_QUEUE_PROVIDER(user) -> None (nenhum saque aguardando) ou {
+#       "position": int >= 1 (1 = o próximo a ser pago), "amount": Decimal, "requested_at": datetime|None,
+#       "entry_position": int|None (posição no momento do pedido; sem ela a barra de avanço não aparece) }
+#   A posição TEM que sair da mesma base que registra os pagamentos: 1 + saques ainda não pagos criados antes
+#   deste (desempate pelo id). Ela só cai quando um saque da frente é pago ou sai da fila. Nunca um número
+#   fixo, estimado ou somado a um piso: a tela afirma ao usuário que aquela é a posição real dele.
+#   Sem a setting, o cartão não aparece.
+#   FRONTEND_WITHDRAW_QUEUE_DEMO=1 marca o cartão como demonstração (selo na tela): a fila do preview é de
+#   mentira e não há pagamento real por trás dela, então a tela precisa dizer isso.
+# =========================================================================
+def _thousands(n):
+    return f"{n:,}".replace(",", ".")
+
+
+def _queue_int(data, field):
+    value = data.get(field)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise ValueError(f"fila de saque: {field} inválido")
+    return value
+
+
+def get_withdraw_queue(user):
+    """Saque do usuário na fila, pronto para a tela, ou None quando não há saque aguardando (ou provider).
+
+    Devolve position/position_display, ahead_label ("2 pessoas na sua frente"), amount, requested_at e, quando o
+    backend informa a posição de entrada, progress_pct (0–100: quanto da fila à frente já foi pago) e cleared_label.
+    Levanta ValueError se o backend devolver posição inválida: posição errada na tela é pior do que nenhuma.
+    """
+    path = getattr(settings, "FRONTEND_WITHDRAW_QUEUE_PROVIDER", None)
+    data = import_string(path)(user) if path else None
+    if not data:
+        return None
+    position = _queue_int(data, "position")
+    ahead = position - 1
+    if ahead == 0:
+        ahead_label = "Ninguém na sua frente. Você é o próximo."
+    elif ahead == 1:
+        ahead_label = "1 pessoa na sua frente"
+    else:
+        ahead_label = f"{_thousands(ahead)} pessoas na sua frente"
+    queue = {"position": position, "position_display": _thousands(position), "ahead": ahead,
+             "ahead_label": ahead_label, "amount": Decimal(data.get("amount") or 0),
+             "requested_at": data.get("requested_at"), "progress_pct": None, "cleared_label": "",
+             "demo": getattr(settings, "FRONTEND_WITHDRAW_QUEUE_DEMO", False)}
+    if data.get("entry_position") is not None:
+        entry = _queue_int(data, "entry_position")
+        if entry < position:
+            raise ValueError("fila de saque: entry_position menor que position (a fila não anda para trás)")
+        total, cleared = entry - 1, entry - position
+        queue["progress_pct"] = 100 if total == 0 else cleared * 100 // total
+        queue["cleared_label"] = ("Você entrou na fila como o primeiro." if total == 0 else
+                                  f"{_thousands(cleared)} de {_thousands(total)} saques que estavam na sua frente "
+                                  "já saíram da fila.")
+    return queue
+
+
+def withdraw_queue_json(queue):
+    """Só o que o withdraw.js atualiza na tela a cada consulta (None = saiu da fila)."""
+    if queue is None:
+        return None
+    return {key: queue[key] for key in ("position", "position_display", "ahead_label", "progress_pct",
+                                        "cleared_label")}
 
 
 # =========================================================================

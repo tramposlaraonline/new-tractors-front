@@ -28,8 +28,8 @@ from .validators import PIX_KEY_TYPES, clean_cpf, clean_pix_key
 from .providers import (
     get_checkin_state, get_demo_withdraw, get_header_state, get_products, get_profile_state, get_roulette_state, get_wallet_summary,
     get_deposit_charge, get_deposit_state, get_notifications, get_purchases, get_team,
-    get_withdraw_history,
-    get_withdraw_state, run_action,
+    get_withdraw_history, get_withdraw_queue,
+    get_withdraw_state, run_action, withdraw_queue_json,
 )
 
 # Header enviado pelo app.js ao trocar de aba: pede só o fragmento da tela, em JSON.
@@ -435,8 +435,18 @@ class WithdrawView(AppPageView):
             "withdraw": state,
             "withdraw_js": {"balance_cents": _cents(wallet["withdraw_balance"]), "min_cents": _cents(state["min_amount"]),
                             "fee_bp": int(state["fee_percent"] * 100)},
+            "queue": queue_for_page(self.request.user),
         })
         return context
+
+
+def queue_for_page(user):
+    """Fila para desenhar a tela: dado inválido do backend esconde o cartão (e vai para o log), sem derrubar o saque."""
+    try:
+        return get_withdraw_queue(user)
+    except ValueError:
+        logger.exception("Fila de saque inválida vinda do backend")
+        return None
 
 # =========================================================================
 # AÇÕES DO INÍCIO (POST + JSON, chamadas pelo home.js)
@@ -594,8 +604,22 @@ class WithdrawActionView(HomeActionView):
         wallet = get_wallet_summary(user)
         html = render_to_string("frontend/app/pages/_withdraw_recent.html", {"withdraw": get_withdraw_state(user)},
                                 request=request)
+        queue_html = render_to_string("frontend/app/pages/_withdraw_queue.html", {"queue": queue_for_page(user)},
+                                      request=request)
         return 200, {"ok": True, "message": result.get("message") or WITHDRAW_OK_MESSAGE,
-                     "withdraw_balance_cents": _cents(wallet["withdraw_balance"]), "recent_html": html}
+                     "withdraw_balance_cents": _cents(wallet["withdraw_balance"]), "recent_html": html,
+                     "queue_html": queue_html.strip()}
+
+
+class WithdrawQueueView(HomeActionView):
+    """Consultada pela tela de saque enquanto o cartão da fila está aberto: {"ok", "queue": {...} | null}.
+
+    null = o saque saiu da fila (pago ou recusado): o withdraw.js recarrega a tela para mostrar o status.
+    Dado inválido do backend cai no erro genérico do HomeActionView (500 + log) e a tela mantém o último valor.
+    """
+
+    def perform(self, request):
+        return 200, {"ok": True, "queue": withdraw_queue_json(get_withdraw_queue(request.user))}
 
 
 # =========================================================================

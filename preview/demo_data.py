@@ -5,12 +5,15 @@ Valores iniciais iguais aos prints. Código de bônus de teste: NEW2026 (R$ 2,60
 import random
 import secrets
 import threading
+from collections import namedtuple
 from datetime import timedelta
 from decimal import Decimal
 
 from django.utils import timezone
 
 from frontend.catalog import PRODUCTS
+
+from .models import DemoQueuedWithdrawal
 
 ROULETTE_PRIZES = [Decimal(v) for v in ("1.00", "2.50", "10.00", "0.50", "5.00", "1.50", "3.00")]
 DEMO_BONUS = {"NEW2026": Decimal("2.60")}
@@ -141,21 +144,71 @@ def profile_state(user):
     return {"pix_linked": bool(_get(user)["pix_key"])}
 
 
-REVIEW_SECONDS = 30  # demo: um saque fica "Em revisão manual" por 30s e depois vira "Pago"
+REVIEW_SECONDS = 30  # demo: a fila paga um saque a cada 30s, na ordem de chegada
+_payout = {"last_at": None}  # quando o último saque da fila foi pago (a fila semeada guarda o seu em settled_at)
+
+# Um item da fila: "memory" é o dicionário do saque em memória (preview) e "pk" a linha da fila semeada
+# na base (manage.py seed_queue). Só um dos dois existe em cada item.
+Pending = namedtuple("Pending", "created_at uid amount memory pk")
 
 
-def _settle(s):
-    for w in s["withdrawals"]:
-        if w["status"] == "review" and (timezone.now() - w["created_at"]).total_seconds() > REVIEW_SECONDS:
-            w["status"] = "paid"
-            if w.get("ledger"):
-                w["ledger"].update(status="completed", description="Liquidação efetuada via Banco Central")
+def _pending():
+    """Saques aguardando pagamento de TODOS os usuários, na ordem de chegada (created_at, usuário).
+
+    Junta a fila em memória (os saques que este preview recebeu) com a fila semeada na base
+    (manage.py seed_queue). As duas entram na mesma contagem: por isso a posição do cartão é a
+    quantidade real de pedidos criados antes do pedido do usuário, e não um número separado.
+    """
+    rows = [Pending(w["created_at"], uid, w["amount"], w, None)
+            for uid, s in _state.items() for w in s.get("withdrawals", ()) if w["status"] == "review"]
+    rows += [Pending(created_at=c, uid=u, amount=a, memory=None, pk=i)
+             for c, u, a, i in DemoQueuedWithdrawal.objects.filter(status="pending")
+             .order_by("created_at", "id").values_list("created_at", "user_id", "amount", "id")]
+    rows.sort(key=lambda row: (row.created_at, row.uid, row.pk is not None))
+    return rows
+
+
+def _last_paid_at():
+    """Quando a fila pagou o último saque: em memória e na base, para o relógio da fila não voltar
+    a zero quando o servidor reinicia (senão a fila semeada inteira cairia de uma vez)."""
+    from_db = DemoQueuedWithdrawal.objects.filter(status="paid").exclude(settled_at=None)\
+        .order_by("-settled_at").values_list("settled_at", flat=True).first()
+    return max((at for at in (_payout["last_at"], from_db) if at is not None), default=None)
+
+
+def _settle_queue():
+    """Paga a fila em ordem: cada saque sai REVIEW_SECONDS depois do anterior (ou do próprio pedido, se chegou depois)."""
+    now = timezone.now()
+    last = _last_paid_at()
+    for row in _pending():
+        paid_at = max(row.created_at, last) + timedelta(seconds=REVIEW_SECONDS) if last else \
+            row.created_at + timedelta(seconds=REVIEW_SECONDS)
+        if paid_at > now:
+            break
+        if row.pk is not None:
+            DemoQueuedWithdrawal.objects.filter(pk=row.pk).update(status="paid", settled_at=paid_at)
+        else:
+            row.memory["status"] = "paid"
+            if row.memory.get("ledger"):
+                row.memory["ledger"].update(status="completed", description="Liquidação efetuada via Banco Central")
+        _payout["last_at"] = last = paid_at
+
+
+def withdraw_queue(user):
+    """FRONTEND_WITHDRAW_QUEUE_PROVIDER do preview: posição contada na fila acima, nunca inventada."""
+    with _lock:
+        _settle_queue()
+        for index, row in enumerate(_pending()):
+            if row.uid == user.pk:
+                return {"position": index + 1, "amount": row.amount, "requested_at": row.created_at,
+                        "entry_position": row.memory.get("entry_position") if row.memory else None}
+    return None
 
 
 def withdraw_state(user):
     with _lock:
         s = _get(user)
-        _settle(s)
+        _settle_queue()
         return {"pix_key": s["pix_key"], "recent": list(reversed(s["withdrawals"]))}
 
 
@@ -164,7 +217,7 @@ def withdraw(user, amount, idempotency_key):
         s = _get(user)
         if idempotency_key in s["withdraw_keys"]:
             return s["withdraw_keys"][idempotency_key]
-        _settle(s)
+        _settle_queue()
         if any(w["status"] == "review" for w in s["withdrawals"]):
             return {"ok": False,
                     "message": "Você já possui um saque em processamento. Aguarde a conclusão para solicitar outro."}
@@ -172,7 +225,8 @@ def withdraw(user, amount, idempotency_key):
             return {"ok": False, "message": "Saldo insuficiente para este saque."}
         s["withdraw"] -= amount
         entry = _log(s, "withdraw", "Saque PIX para Conta", "Em análise / processamento", -amount, "processing")
-        s["withdrawals"].append({"amount": amount, "created_at": timezone.now(), "status": "review", "ledger": entry})
+        s["withdrawals"].append({"amount": amount, "created_at": timezone.now(), "status": "review", "ledger": entry,
+                                 "entry_position": len(_pending()) + 1})
         result = {"ok": True}
         s["withdraw_keys"][idempotency_key] = result
         return result
@@ -271,7 +325,7 @@ def purchases(user):
 def statement(user, kinds, offset, limit):
     with _lock:
         s = _get(user)
-        _settle(s)
+        _settle_queue()
         items = [e for e in s["ledger"] if kinds is None or e["kind"] in kinds]
         items.sort(key=lambda e: e["created_at"], reverse=True)
         return [dict(e) for e in items[offset:offset + limit]]
@@ -389,7 +443,7 @@ def statement_summary(user):
 def withdraw_history(user):
     with _lock:
         s = _get(user)
-        _settle(s)
+        _settle_queue()
         rows = []
         for i, w in enumerate(s["withdrawals"]):
             fee = (w["amount"] * Decimal("0.10")).quantize(Decimal("0.01"))

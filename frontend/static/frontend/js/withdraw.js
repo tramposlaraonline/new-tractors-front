@@ -87,6 +87,10 @@
           page.setAttribute('data-balance-cents', String(data.withdraw_balance_cents));
         }
         if (typeof data.recent_html === 'string') page.querySelector('[data-withdraw-recent]').innerHTML = data.recent_html;
+        if (typeof data.queue_html === 'string') {
+          page.querySelector('[data-withdraw-queue-slot]').innerHTML = data.queue_html;
+          scheduleQueue();
+        }
         page.querySelector('[data-withdraw-amount]').value = '';
         update(page);
         openDialog('withdrawSuccess', data.message, '[data-withdraw-success-message]');
@@ -130,6 +134,104 @@
   document.addEventListener('app:page', function () {
     var page = root();
     if (page) { pendingKey = null; update(page); }
+    scheduleQueue();
+  });
+
+  // -----------------------------------------------------------------------
+  // Fila de saque: consulta o backend enquanto o cartão está na tela e a aba visível.
+  // A tela nunca calcula posição: só mostra o que /acoes/saque/fila devolve.
+  // -----------------------------------------------------------------------
+  var QUEUE_POLL_MS = 15000;
+  var DRIVE_MS = 1500;   // igual à transição da faixa no CSS (1400ms) + folga
+  var MOVED_MS = 6000;   // tempo do selo "A fila andou"
+  var queueTimer = null;
+  var queueBusy = false;
+
+  function queueCard() { return document.querySelector('[data-withdraw-queue]'); }
+
+  function scheduleQueue() {
+    clearTimeout(queueTimer);
+    queueTimer = null;
+    if (queueCard() && !document.hidden) queueTimer = setTimeout(pollQueue, QUEUE_POLL_MS);
+  }
+
+  function clockLabel() {
+    var d = new Date();
+    return 'Atualizado às ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  }
+
+  function setStale(card, stale) {
+    card.classList.toggle('is-stale', stale);
+    card.querySelector('[data-queue-updated]').textContent =
+      stale ? 'Sem conexão com a fila. Tentando de novo...' : clockLabel();
+  }
+
+  /** Troca o número no meio da rolagem (com movimento reduzido, a animação não roda e a troca é imediata). */
+  function rollNumber(el, text) {
+    el.classList.remove('is-rolling');
+    void el.offsetWidth; // reinicia a animação se a fila andar duas vezes seguidas
+    el.classList.add('is-rolling');
+    setTimeout(function () { el.textContent = text; }, 320);
+    setTimeout(function () { el.classList.remove('is-rolling'); }, 720);
+  }
+
+  function renderQueue(card, q) {
+    var previous = parseInt(card.getAttribute('data-position'), 10) || q.position;
+    var numEl = card.querySelector('[data-queue-position]');
+    card.setAttribute('data-position', String(q.position));
+    card.querySelector('[data-queue-ahead]').textContent = q.ahead_label;
+
+    var trackWrap = card.querySelector('[data-queue-track]');
+    var track = card.querySelector('[data-queue-progress]');
+    var hasProgress = typeof q.progress_pct === 'number';
+    trackWrap.hidden = !hasProgress;
+    if (hasProgress) {
+      track.style.setProperty('--wq-pct', String(q.progress_pct));
+      track.setAttribute('aria-valuenow', String(q.progress_pct));
+      card.querySelector('[data-queue-cleared]').textContent = q.cleared_label;
+    }
+
+    if (q.position >= previous) { numEl.textContent = q.position_display; return; }
+
+    // A fila andou: número rola, trator avança, selo e anúncio para leitor de tela.
+    var moved = previous - q.position;
+    rollNumber(numEl, q.position_display);
+    if (hasProgress) {
+      track.classList.add('is-driving');
+      setTimeout(function () { track.classList.remove('is-driving'); }, DRIVE_MS);
+    }
+    var chip = card.querySelector('[data-queue-moved]');
+    chip.textContent = moved === 1 ? 'A fila andou 1 posição' : 'A fila andou ' + moved + ' posições';
+    chip.hidden = false;
+    clearTimeout(chip._hideTimer);
+    chip._hideTimer = setTimeout(function () { chip.hidden = true; }, MOVED_MS);
+    card.querySelector('[data-queue-announce]').textContent =
+      'Sua posição agora é ' + q.position_display + '. ' + q.ahead_label;
+  }
+
+  function pollQueue() {
+    var card = queueCard();
+    if (!card || queueBusy) return;
+    queueBusy = true;
+    window.NT.postAction(card.getAttribute('data-queue-url')).then(function (data) {
+      queueBusy = false;
+      if (queueCard() !== card) return;   // saiu da tela no meio da consulta
+      if (data.locked) return;            // área fechada pelo bloqueio: para de consultar
+      if (!data.ok) { setStale(card, true); scheduleQueue(); return; }
+      if (!data.queue) {
+        // Saiu da fila (pago ou recusado): recarrega a tela para mostrar status e saldo reais.
+        window.NTApp.navigate(location.href, { replace: true });
+        return;
+      }
+      setStale(card, false);
+      renderQueue(card, data.queue);
+      scheduleQueue();
+    });
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { clearTimeout(queueTimer); queueTimer = null; return; }
+    if (queueCard()) pollQueue(); // voltou para a aba: atualiza na hora em vez de esperar o próximo ciclo
   });
 
   // -----------------------------------------------------------------------
@@ -250,4 +352,5 @@
 
   // Carga direta de /withdraw: o app:page inicial do app.js dispara antes deste script.
   if (root()) update(root());
+  scheduleQueue();
 })();

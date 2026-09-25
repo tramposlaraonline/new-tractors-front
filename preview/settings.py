@@ -129,7 +129,7 @@ FRONTEND_ONLY_HOME = os.environ.get("FRONTEND_ONLY_HOME") == "1"
 FRONTEND_BALANCE_RECALC = os.environ.get("FRONTEND_BALANCE_RECALC") == "1"
 
 # Saldo para saque de DEMONSTRAÇÃO: R$ 200 no primeiro acesso de cada usuário, +R$ 50/h, subindo na tela a
-# cada 3s, sempre com o selo "Demonstração — valores fictícios". Liga com a env FRONTEND_DEMO_WITHDRAW=1.
+# cada 3s, sempre com o selo "Os valores estão sendo calculados...". Liga com a env FRONTEND_DEMO_WITHDRAW=1.
 if os.environ.get("FRONTEND_DEMO_WITHDRAW") == "1":
     FRONTEND_DEMO_WITHDRAW_PROVIDER = "preview.demo_withdraw.state"
 
@@ -159,4 +159,10 @@ FRONTEND_NOTIFICATIONS_PROVIDER = "preview.demo_data.notifications"
 FRONTEND_NOTIFICATIONS_READ_ACTION = "preview.demo_data.mark_notifications_read"
 FRONTEND_WITHDRAW_HISTORY_PROVIDER = "preview.demo_data.withdraw_history"
 FRONTEND_RECRUIT_ACTION = "preview.demo_data.recruit"
+
+# Fila de saque: só no preview LOCAL, calculada dos saques de demonstração de todos os usuários (um pago a cada
+# 30s, em ordem). Desligada no Render: lá não existe backend que pague saques, então não existe fila de verdade
+# para mostrar. No projeto real, apontar para a função que calcula a posição na base de pagamentos (ver README).
+if not ON_RENDER:
+    FRONTEND_WITHDRAW_QUEUE_PROVIDER = "preview.demo_data.withdraw_queue"
 # Links de suporte/comunidade: editar no Django admin (/admin/ → "Links de atendimento e comunidade").

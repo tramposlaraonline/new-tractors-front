@@ -48,3 +48,48 @@ class DemoWithdrawStateTests(TestCase):
         DemoWithdrawBalance.objects.filter(user=self.ana).update(started_at=timezone.now() - timedelta(hours=1))
         # Nada em memória: uma nova leitura (outro processo/deploy) chega ao mesmo valor.
         self.assertEqual(state(self.ana)["balance"].quantize(Decimal("1")), Decimal("250"))
+
+
+class DemoWithdrawQueueTests(TestCase):
+    """A fila do preview é calculada dos saques de todos os usuários e paga um por vez, em ordem."""
+
+    def setUp(self):
+        from unittest import mock
+
+        from . import demo_data
+        self.demo = demo_data
+        demo_data._state.clear()
+        demo_data._payout["last_at"] = None
+        self.t0 = timezone.now()
+        self.clock = mock.patch("preview.demo_data.timezone.now", return_value=self.t0)
+        self.now = self.clock.start()
+        self.addCleanup(self.clock.stop)
+        self.addCleanup(demo_data._state.clear)
+        User = get_user_model()
+        self.users = [User.objects.create_user(username=f"1191111111{i}", password="x") for i in range(3)]
+
+    def request_withdraw(self, user, key, at_seconds):
+        self.now.return_value = self.t0 + timedelta(seconds=at_seconds)
+        return self.demo.withdraw(user, Decimal("1.00"), key)
+
+    def position_at(self, user, at_seconds):
+        self.now.return_value = self.t0 + timedelta(seconds=at_seconds)
+        queue = self.demo.withdraw_queue(user)
+        return queue and (queue["position"], queue["entry_position"])
+
+    def test_withdrawQueue_orderOfArrival_givesPositions(self):
+        for i, user in enumerate(self.users):
+            self.request_withdraw(user, f"key-{i}", at_seconds=i)
+
+        self.assertEqual([self.position_at(u, 5) for u in self.users], [(1, 1), (2, 2), (3, 3)])
+
+    def test_withdrawQueue_paysOneEvery30sInOrder(self):
+        for i, user in enumerate(self.users):
+            self.request_withdraw(user, f"key-{i}", at_seconds=i)
+
+        self.assertEqual([self.position_at(u, 31) for u in self.users], [None, (1, 2), (2, 3)])
+        self.assertEqual([self.position_at(u, 61) for u in self.users], [None, None, (1, 3)])
+        self.assertEqual([self.position_at(u, 91) for u in self.users], [None, None, None])
+
+    def test_withdrawQueue_withoutWithdrawal_isNone(self):
+        self.assertIsNone(self.position_at(self.users[0], 0))

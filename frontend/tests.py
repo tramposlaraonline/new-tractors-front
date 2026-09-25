@@ -811,6 +811,149 @@ class WithdrawTests(TestCase):
         self.assertEqual(self.client.post(self.url, {"amount": "10"}, **self.KEY).status_code, 401)
         self.assertEqual(CALLS, [])
 
+    @override_settings(FRONTEND_WITHDRAW_QUEUE_PROVIDER="frontend.tests.fake_queue_third_of_seven")
+    def test_success_with_queue_provider_returns_queue_card(self):
+        data = self.client.post(self.url, {"amount": "10"}, **self.KEY).json()
+
+        self.assertIn("data-withdraw-queue", data["queue_html"])
+
+    @override_settings(FRONTEND_WITHDRAW_QUEUE_PROVIDER=None)
+    def test_success_without_queue_provider_returns_empty_queue_html(self):
+        data = self.client.post(self.url, {"amount": "10"}, **self.KEY).json()
+
+        self.assertEqual(data["queue_html"], "")
+
+
+# ---------------------------------------------------------------------------
+# Fila de saque
+# ---------------------------------------------------------------------------
+def fake_queue_third_of_seven(user):
+    from datetime import datetime, timezone as dt_tz
+    from decimal import Decimal
+    return {"position": 3, "entry_position": 7, "amount": Decimal("45.25"),
+            "requested_at": datetime(2026, 9, 25, 17, 32, tzinfo=dt_tz.utc)}
+
+
+def fake_queue_next(user):
+    return {"position": 1, "entry_position": 4, "amount": 10}
+
+
+def fake_queue_long(user):
+    return {"position": 12345, "amount": 10}
+
+
+def fake_queue_none(user):
+    return None
+
+
+def fake_queue_position_zero(user):
+    return {"position": 0, "amount": 10}
+
+
+def fake_queue_position_text(user):
+    return {"position": "3", "amount": 10}
+
+
+def fake_queue_went_backwards(user):
+    return {"position": 5, "entry_position": 2, "amount": 10}
+
+
+def fake_queue_entered_first(user):
+    return {"position": 1, "entry_position": 1, "amount": 10}
+
+
+@override_settings(FRONTEND_WITHDRAW_PROVIDER="frontend.tests.fake_withdraw_state",
+                   FRONTEND_WALLET_PROVIDER="frontend.tests.fake_rich_wallet",
+                   FRONTEND_WITHDRAW_QUEUE_PROVIDER="frontend.tests.fake_queue_third_of_seven")
+class WithdrawQueueTests(TestCase):
+    page_url = reverse("frontend:withdraw")
+    queue_url = reverse("frontend:action_withdraw_queue")
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username="82991028518", password="x")
+        self.client.force_login(self.user)
+
+    def page(self):
+        return self.client.get(self.page_url).content.decode()
+
+    def test_page_withQueue_showsPositionPeopleAheadAndProgress(self):
+        html = self.page()
+
+        for marker in ("Seu saque está na fila", "data-queue-position>3<", "2 pessoas na sua frente", 'aria-valuenow="66"',
+                       "4 de 6 saques que estavam na sua frente já saíram da fila.", "R$ 45,25",
+                       "Pedido em 25/09 às 14:32"):  # 17:32 UTC em São Paulo
+            self.assertIn(marker, html)
+
+    @override_settings(FRONTEND_WITHDRAW_QUEUE_PROVIDER=None)
+    def test_page_withoutProvider_hasNoQueueCard(self):
+        self.assertNotIn("Seu saque está na fila", self.page())
+
+    @override_settings(FRONTEND_WITHDRAW_QUEUE_PROVIDER="frontend.tests.fake_queue_none")
+    def test_page_withNothingQueued_hasNoQueueCard(self):
+        self.assertNotIn("Seu saque está na fila", self.page())
+
+    @override_settings(FRONTEND_WITHDRAW_QUEUE_PROVIDER="frontend.tests.fake_queue_next")
+    def test_page_atFrontOfQueue_saysYouAreNext(self):
+        html = self.page()
+
+        self.assertIn("Ninguém na sua frente. Você é o próximo.", html)
+        self.assertIn('aria-valuenow="100"', html)
+
+    @override_settings(FRONTEND_WITHDRAW_QUEUE_PROVIDER="frontend.tests.fake_queue_long")
+    def test_page_withoutEntryPosition_hidesProgressAndFormatsThousands(self):
+        html = self.page()
+
+        self.assertIn("data-queue-position>12.345<", html)
+        self.assertIn("12.344 pessoas na sua frente", html)
+        self.assertIn("data-queue-track hidden", html)
+
+    @override_settings(FRONTEND_WITHDRAW_QUEUE_PROVIDER="frontend.tests.fake_queue_entered_first")
+    def test_page_enteredAsFirst_explainsFullBar(self):
+        self.assertIn("Você entrou na fila como o primeiro.", self.page())
+
+    def test_invalidBackendData_hidesCardAndKeepsPageUsable(self):
+        for provider in ("fake_queue_position_zero", "fake_queue_position_text", "fake_queue_went_backwards"):
+            with self.subTest(provider=provider), override_settings(
+                    FRONTEND_WITHDRAW_QUEUE_PROVIDER=f"frontend.tests.{provider}"), \
+                    self.assertLogs("frontend.views", level="ERROR"):
+                res = self.client.get(self.page_url)
+                self.assertEqual(res.status_code, 200)
+                self.assertNotIn("Seu saque está na fila", res.content.decode())
+
+    def test_queueAction_returnsOnlyWhatTheScreenUpdates(self):
+        data = self.client.post(self.queue_url).json()
+
+        self.assertEqual(data["queue"], {"position": 3, "position_display": "3",
+                                         "ahead_label": "2 pessoas na sua frente", "progress_pct": 66,
+                                         "cleared_label": "4 de 6 saques que estavam na sua frente já saíram da fila."})
+
+    @override_settings(FRONTEND_WITHDRAW_QUEUE_PROVIDER="frontend.tests.fake_queue_none")
+    def test_queueAction_afterLeavingQueue_returnsNull(self):
+        data = self.client.post(self.queue_url).json()
+
+        self.assertEqual((data["ok"], data["queue"]), (True, None))
+
+    @override_settings(FRONTEND_WITHDRAW_QUEUE_PROVIDER="frontend.tests.fake_queue_position_zero")
+    def test_queueAction_withInvalidBackendData_answersGenericError(self):
+        with self.assertLogs("frontend.views", level="ERROR"):
+            res = self.client.post(self.queue_url)
+
+        self.assertEqual((res.status_code, res.json()["message"]), (500, GENERIC_ERROR_TEXT))
+
+    def test_queueAction_requiresLoginAndPost(self):
+        self.assertEqual(self.client.get(self.queue_url).status_code, 405)
+        self.client.logout()
+        self.assertEqual(self.client.post(self.queue_url).status_code, 401)
+
+    @override_settings(FRONTEND_ONLY_HOME=True)
+    def test_queueAction_underHomeOnlyLock_isClosed(self):
+        res = self.client.post(self.queue_url)
+
+        self.assertEqual((res.status_code, res.json()["locked"]), (503, True))
+
+
+GENERIC_ERROR_TEXT = "Não foi possível concluir agora. Tente novamente em instantes."
+
 # ---------------------------------------------------------------------------
 # Depósito Pix, CPF do titular e chave Pix de saque
 # ---------------------------------------------------------------------------
@@ -1632,7 +1775,7 @@ class BalanceRecalcTests(TestCase):
 
 
 # Saldo para saque de demonstração: contador no Início, sempre com o selo.
-DEMO_SEAL = "Demonstração — valores fictícios"
+DEMO_SEAL = "Os valores estão sendo calculados..."
 
 
 @override_settings(FRONTEND_DEMO_WITHDRAW_PROVIDER="preview.demo_withdraw.state", FRONTEND_BALANCE_RECALC=False,

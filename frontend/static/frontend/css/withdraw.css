@@ -603,3 +603,255 @@
     font-size: 13px;
   }
 }
+
+/* =========================================================================
+   Fila de saque (_withdraw_queue.html). A posição vem do backend; a faixa mostra
+   quanto da fila que estava à frente já foi paga (dourado = colhido, verde = a colher).
+   ========================================================================= */
+.wq {
+  margin-top: 16px;
+  padding: 20px 20px 18px;
+  border: 1px solid rgba(214, 169, 78, 0.35);
+  border-radius: 26px;
+  background-color: var(--warm-white);
+  box-shadow: 0 10px 26px rgba(16, 46, 38, 0.07);
+}
+
+.wq-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* Ponto "ao vivo": a tela está consultando a fila. */
+.wq-live {
+  position: relative;
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  margin-top: 8px;
+  border-radius: 50%;
+  background-color: var(--positive);
+}
+
+.wq-live::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-color: var(--positive);
+  animation: wq-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.wq.is-stale .wq-live,
+.wq.is-stale .wq-live::after {
+  background-color: var(--warning);
+}
+
+@keyframes wq-ping {
+  75%, 100% { transform: scale(2.6); opacity: 0; }
+}
+
+.wq-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.wq-head-text h2 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 24px;
+  color: var(--forest-950);
+}
+
+.wq-head-text p {
+  margin-top: 2px;
+  font-size: 13.5px;
+  line-height: 19px;
+  color: var(--muted);
+}
+
+.wq-amount {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 24px;
+  color: var(--forest-950);
+}
+
+/* Posição: o número é o protagonista do cartão. */
+.wq-spot {
+  margin-top: 18px;
+}
+
+.wq-spot-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.wq-spot-value {
+  display: flex;
+  align-items: flex-start;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--forest-950);
+}
+
+.wq-num {
+  display: inline-block;
+  font-size: clamp(48px, 15vw, 64px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.wq-num.is-rolling {
+  animation: wq-roll 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes wq-roll {
+  0% { transform: translateY(0); opacity: 1; }
+  45% { transform: translateY(-55%); opacity: 0; }
+  55% { transform: translateY(55%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.wq-ord {
+  margin-top: 8px;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--harvest);
+}
+
+.wq-ahead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 2px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22px;
+  color: var(--forest-900);
+}
+
+/* "A fila andou": aparece por alguns segundos quando a posição cai. */
+.wq-moved {
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background-color: #E6F2E4;
+  color: var(--positive);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 20px;
+  animation: wq-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes wq-pop {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Faixa de lavoura: o trator avança até a bandeira (pagamento). */
+.wq-track-wrap {
+  margin-top: 18px;
+}
+
+.wq-track {
+  --wq-tractor: 40px;
+  position: relative;
+  height: 40px;
+  border-radius: 14px;
+  background:
+    repeating-linear-gradient(90deg, rgba(47, 111, 78, 0.16) 0 3px, transparent 3px 9px),
+    linear-gradient(180deg, #DDEBCB 0%, #CFE2B8 100%);
+  overflow: hidden;
+}
+
+.wq-harvested {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--wq-tractor) / 2 + (100% - var(--wq-tractor) - 26px) * var(--wq-pct) / 100);
+  background:
+    repeating-linear-gradient(90deg, rgba(160, 112, 28, 0.22) 0 2px, transparent 2px 7px),
+    linear-gradient(180deg, #EFD9A3 0%, #E3C47E 100%);
+  transition: width 1400ms cubic-bezier(0.45, 0, 0.2, 1);
+}
+
+.wq-tractor {
+  position: absolute;
+  bottom: 3px;
+  left: calc((100% - var(--wq-tractor) - 26px) * var(--wq-pct) / 100);
+  width: var(--wq-tractor);
+  transition: left 1400ms cubic-bezier(0.45, 0, 0.2, 1);
+}
+
+.wq-tractor svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.wq-track.is-driving .wq-tractor svg {
+  animation: wq-bump 280ms ease-in-out 5;
+}
+
+.wq-track.is-driving .wq-wheel {
+  animation: wq-spin 700ms linear 2;
+}
+
+@keyframes wq-bump {
+  50% { transform: translateY(-1.5px); }
+}
+
+@keyframes wq-spin {
+  to { transform: rotate(360deg); }
+}
+
+.wq-flag {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  color: var(--forest-900);
+}
+
+.wq-flag svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.wq-cleared {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+}
+
+.wq-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(16, 46, 38, 0.07);
+  font-size: 12.5px;
+  line-height: 18px;
+  color: var(--muted);
+}
+
+.wq-foot [data-queue-updated] {
+  font-weight: 700;
+  color: var(--forest-700);
+}
+
+.wq.is-stale .wq-foot [data-queue-updated] {
+  color: var(--warning);
+}

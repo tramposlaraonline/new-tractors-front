@@ -1,5 +1,5 @@
 """Saldo para saque de DEMONSTRAÇÃO (FRONTEND_DEMO_WITHDRAW=1). Valores fictícios, sempre exibidos com o selo
-"Demonstração — valores fictícios".
+"Os valores estão sendo calculados...".
 
 Cada usuário começa em R$ 200 no primeiro acesso e sobe R$ 50 por hora a partir dali. Como cada um tem o
 próprio início, o valor é diferente para cada usuário e continua do mesmo ponto depois de um deploy.
