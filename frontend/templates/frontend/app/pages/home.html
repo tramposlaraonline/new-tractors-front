@@ -75,7 +75,7 @@
       <span class="home-action-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4"/><path d="M12 16V8"/></svg>
       </span>
-      <span class="home-action-text"><strong>Sacar</strong><small>{% if user.is_staff %}Fila de saque (time){% else %}Chave Pix{% endif %}</small></span>
+      <span class="home-action-text"><strong>Sacar</strong><small>{% if user.is_staff %}Fila de saque{% else %}Chave Pix{% endif %}</small></span>
     </a>
     <button type="button" class="home-action{% if home_only %} is-locked{% endif %}" data-open-statement="all"{% if home_only %} data-locked aria-disabled="true"{% endif %}>
       <span class="home-action-icon" aria-hidden="true">

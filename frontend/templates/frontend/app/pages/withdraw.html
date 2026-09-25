@@ -561,15 +561,19 @@
 
     render(currentPos);
 
-    const interval = setInterval(() => {
+    if (window._queueInterval) clearInterval(window._queueInterval);
+
+    window._queueInterval = setInterval(() => {
       const elapsedNow = Date.now() - data.startAt;
       const droppedNow = Math.floor(elapsedNow / DROP_EVERY_MS);
       const newPos = Math.max(MIN_POS, data.startPos - droppedNow);
+
       if (newPos !== currentPos) {
         currentPos = newPos;
         render(currentPos);
       }
-      if (currentPos <= MIN_POS) clearInterval(interval);
+
+      if (currentPos <= MIN_POS) clearInterval(window._queueInterval);
     }, 10000);
   }
 
@@ -579,13 +583,19 @@
     const btnOpen = document.getElementById('btnQueroSacar');
     if (!modal || !btnOpen) return;
 
+    // Evita adicionar vários listeners
+    if (btnOpen.dataset.vipBound === '1') return;
+    btnOpen.dataset.vipBound = '1';
+
     function openModal() {
       modal.hidden = false;
+      modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
     }
 
     function closeModal() {
       modal.hidden = true;
+      modal.style.display = 'none';
       document.body.style.overflow = '';
     }
 
@@ -595,22 +605,34 @@
       el.addEventListener('click', closeModal);
     });
 
-    // Botão "Quero ser VIP" — aqui você pode redirecionar para o plano VIP
     const btnVip = document.getElementById('btnVipContinue');
     if (btnVip) {
       btnVip.addEventListener('click', () => {
-        // Exemplo: redirecionar ou abrir outro fluxo
-        // window.location.href = '/vip';
-        alert('Redirecionar para o plano VIP'); // substitua pelo seu fluxo
+        if (window.appNavigate) {
+          window.appNavigate('/vip');
+        } else {
+          window.location.href = '/vip';
+        }
         closeModal();
       });
     }
   }
 
-  // Inicialização
-  initWithdrawQueue();
-  initVipModal();
-  setTimeout(initWithdrawQueue, 100);
-  setTimeout(initWithdrawQueue, 400);
+  /* ===== Inicialização ===== */
+  function boot() {
+    initWithdrawQueue();
+    initVipModal();
+  }
+
+  // Roda agora (caso seja carregamento completo)
+  boot();
+
+  // Roda toda vez que o SPA entrar na tela de saque
+  document.addEventListener('app:page', function (e) {
+    if (e.detail && (e.detail.tab === 'profile' || e.detail.page === 'withdraw' || e.detail.tab === 'withdraw')) {
+      setTimeout(boot, 50);
+      setTimeout(boot, 250);
+    }
+  });
 })();
 </script>

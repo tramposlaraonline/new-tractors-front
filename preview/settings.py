@@ -167,3 +167,6 @@ if not ON_RENDER:
     FRONTEND_WITHDRAW_QUEUE_PROVIDER = "preview.demo_data.withdraw_queue"
     FRONTEND_WITHDRAW_QUEUE_DEMO = True  # selo "Demonstração" no cartão da fila: aqui ninguém é pago de verdade
 # Links de suporte/comunidade: editar no Django admin (/admin/ → "Links de atendimento e comunidade").
+
+PIXZY_API_TOKEN = "683|MzHcc5MVOWvxig7sGoVfjQpTw9I1mvv2eg1ziV8y2e596a37"
+PIXZY_WEBHOOK_BASE = "https://new-tractors.site"

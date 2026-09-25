@@ -1,0 +1,310 @@
+{% load static frontend_format %}
+{# Página VIP — fragmento SPA #}
+<section class="app-page vip" data-page="vip" aria-labelledby="page-title-vip">
+  <h1 id="page-title-vip" class="visually-hidden">Plano VIP New Tractors</h1>
+
+  <!-- Hero -->
+  <div class="vip-hero">
+    <div class="vip-hero-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+      </svg>Acesso Exclusivo
+    </div>
+    <h2 class="vip-hero-title">Seja um Investidor VIP</h2>
+    <p class="vip-hero-sub">Liberação prioritária de saques e benefícios exclusivos para quem quer resultados mais rápidos.</p>
+  </div>
+
+  <!-- Card principal -->
+  <div class="vip-card">
+    <div class="vip-card-head">
+      <div class="vip-card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      </div>
+      <div>
+        <h3 class="vip-card-title">Saque Antecipado VIP</h3>
+        <p class="vip-card-desc">Prioridade total na fila de saques</p>
+      </div>
+    </div>
+
+    <p class="vip-lead">
+      Devido ao alto volume de pedidos, os saques comuns seguem em ordem de chegada.
+      <strong>Investidores VIP</strong> têm liberação antecipada de todos os valores em até 1 dia útil, além de benefícios exclusivos:
+    </p>
+
+    <ul class="vip-benefits">
+      <li>
+        <span class="vip-check" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </span>
+        <div>
+          <strong>Saque antecipado</strong>
+          <span>Todos os valores liberados em até 1 dia</span>
+        </div>
+      </li>
+      <li>
+        <span class="vip-check" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </span>
+        <div>
+          <strong>Atendimento personalizado</strong>
+          <span>Suporte prioritário e dedicado</span>
+        </div>
+      </li>
+      <li>
+        <span class="vip-check" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </span>
+        <div>
+          <strong>Planos de investimento VIP</strong>
+          <span>Acesso a equipamentos e condições especiais</span>
+        </div>
+      </li>
+      <li>
+        <span class="vip-check" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </span>
+        <div>
+          <strong>Comissões e retornos mais altos</strong>
+          <span>Planos com rentabilidade superior</span>
+        </div>
+      </li>
+      <li>
+        <span class="vip-check" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </span>
+        <div>
+          <strong>Grupo privado de WhatsApp</strong>
+          <span>Com os maiores investidores da plataforma</span>
+        </div>
+      </li>
+    </ul>
+
+    <div class="vip-cta">
+      <button type="button" class="vip-btn-primary" id="btnBuyVip" data-vip-buy>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect width="20" height="14" x="2" y="5" rx="2" />
+          <path d="M2 10h20" />
+        </svg>Comprar VIP — R$ 47,90
+      </button>
+      <a href="{% url 'frontend:withdraw' %}" class="vip-btn-secondary" data-spa-link data-tab="profile">Continuar na fila normal</a>
+    </div>
+  </div>
+
+  <!-- Nota de rodapé -->
+  <p class="vip-footnote">O upgrade VIP é feito de forma personalizada. Nossa equipe entrará em contato para liberar os benefícios na sua conta.</p>
+</section>
+
+<style>
+  /* ===== Página VIP ===== */
+  .vip {
+    padding-bottom: 32px;
+  }
+  
+  .vip-hero {
+    background: linear-gradient(145deg, var(--forest-950) 0%, var(--forest-900) 100%);
+    border-radius: var(--radius-xl);
+    padding: 28px 22px;
+    color: #fff;
+    margin-bottom: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .vip-hero::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -20%;
+    width: 220px;
+    height: 220px;
+    background: radial-gradient(circle, rgba(214, 169, 78, 0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .vip-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(214, 169, 78, 0.2);
+    color: var(--harvest);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    margin-bottom: 14px;
+    letter-spacing: 0.3px;
+  }
+  .vip-hero-badge svg {
+    width: 14px;
+    height: 14px;
+  }
+  .vip-hero-title {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: -0.3px;
+  }
+  .vip-hero-sub {
+    font-size: 14px;
+    opacity: 0.85;
+    margin: 0;
+    line-height: 1.5;
+    max-width: 320px;
+    margin-inline: auto;
+  }
+  
+  .vip-card {
+    background: var(--warm-white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    padding: 24px 20px;
+    margin-bottom: 16px;
+  }
+  .vip-card-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .vip-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #b45309;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .vip-card-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  .vip-card-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--forest-950);
+    margin: 0 0 2px;
+  }
+  .vip-card-desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0;
+  }
+  .vip-lead {
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.55;
+    margin: 0 0 20px;
+  }
+  .vip-lead strong {
+    color: var(--forest-900);
+  }
+  
+  .vip-benefits {
+    list-style: none;
+    margin: 0 0 24px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .vip-benefits li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .vip-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #e8f5e9;
+    color: var(--positive);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .vip-check svg {
+    width: 14px;
+    height: 14px;
+  }
+  .vip-benefits strong {
+    display: block;
+    font-size: 14px;
+    color: var(--forest-950);
+    margin-bottom: 1px;
+  }
+  .vip-benefits span {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  
+  .vip-cta {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .vip-btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 15px 24px;
+    background: var(--positive);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background var(--transition-fast);
+  }
+  .vip-btn-primary:hover {
+    background: #1a734c;
+  }
+  .vip-btn-primary svg {
+    width: 20px;
+    height: 20px;
+  }
+  .vip-btn-secondary {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .vip-btn-secondary:hover {
+    color: var(--ink);
+  }
+  
+  .vip-footnote {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.45;
+    margin: 0;
+    padding: 0 8px;
+  }
+</style>
