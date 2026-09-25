@@ -372,4 +372,114 @@
   } else {
     scheduleQueue();
   }
+    // -----------------------------------------------------------------------
+  // Fila fake + modal VIP (UI nova do withdraw.html)
+  // Roda no arquivo estático: script inline do fragmento NÃO executa no SPA.
+  // -----------------------------------------------------------------------
+  var QUEUE_STORAGE_KEY = 'nt_withdraw_queue_v2';
+  var QUEUE_MIN_POS = 87;
+  var QUEUE_DROP_EVERY_MS = 45 * 1000;
+  var QUEUE_INITIAL_MIN = 13500;
+  var QUEUE_INITIAL_MAX = 15500;
+  var queueInterval = null;
+
+  function initWithdrawQueue() {
+    var posEl = document.getElementById('queuePosition');
+    if (!posEl) return;
+
+    var data = null;
+    try {
+      data = JSON.parse(localStorage.getItem(QUEUE_STORAGE_KEY));
+    } catch (e) {}
+
+    var now = Date.now();
+    if (!data || typeof data.startPos !== 'number' || typeof data.startAt !== 'number') {
+      var startPos = Math.floor(Math.random() * (QUEUE_INITIAL_MAX - QUEUE_INITIAL_MIN + 1)) + QUEUE_INITIAL_MIN;
+      data = { startPos: startPos, startAt: now };
+      localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(data));
+    }
+
+    var elapsed = now - data.startAt;
+    var dropped = Math.floor(elapsed / QUEUE_DROP_EVERY_MS);
+    var currentPos = Math.max(QUEUE_MIN_POS, data.startPos - dropped);
+    var maxDrop = data.startPos - QUEUE_MIN_POS;
+    var progress = Math.min(92, Math.max(4, Math.floor((dropped / Math.max(1, maxDrop)) * 100)));
+
+    var peopleEl = document.getElementById('peopleAhead');
+    var barEl = document.getElementById('progressBar');
+    var percentEl = document.getElementById('progressPercent');
+
+    function render(pos) {
+      posEl.textContent = pos.toLocaleString('pt-BR');
+      if (peopleEl) peopleEl.textContent = Math.max(0, pos - 1).toLocaleString('pt-BR');
+      if (percentEl) percentEl.textContent = progress + '%';
+      if (barEl) barEl.style.width = progress + '%';
+    }
+
+    render(currentPos);
+
+    if (queueInterval) clearInterval(queueInterval);
+    queueInterval = setInterval(function () {
+      var elapsedNow = Date.now() - data.startAt;
+      var droppedNow = Math.floor(elapsedNow / QUEUE_DROP_EVERY_MS);
+      var newPos = Math.max(QUEUE_MIN_POS, data.startPos - droppedNow);
+      if (newPos !== currentPos) {
+        currentPos = newPos;
+        render(currentPos);
+      }
+      if (currentPos <= QUEUE_MIN_POS) {
+        clearInterval(queueInterval);
+        queueInterval = null;
+      }
+    }, 10000);
+  }
+
+  function openVipModal() {
+    var modal = document.getElementById('vipModal');
+    if (!modal) return;
+    modal.hidden = false;
+    modal.style.display = 'flex';
+    document.documentElement.classList.add('nt-modal-open');
+  }
+
+  function closeVipModal() {
+    var modal = document.getElementById('vipModal');
+    if (!modal) return;
+    modal.hidden = true;
+    modal.style.display = 'none';
+    document.documentElement.classList.remove('nt-modal-open');
+  }
+
+  // Delegação: funciona após troca SPA (o HTML novo chega sem script).
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest) return;
+    if (e.target.closest('#btnQueroSacar')) {
+      openVipModal();
+      return;
+    }
+    if (e.target.closest('[data-close-vip]')) {
+      closeVipModal();
+      return;
+    }
+    if (e.target.closest('#btnVipContinue')) {
+      closeVipModal();
+      if (window.NTApp && window.NTApp.navigate) {
+        window.NTApp.navigate('/vip');
+      } else {
+        window.location.href = '/vip';
+      }
+    }
+  });
+
+  function bootWithdrawUi() {
+    if (!document.getElementById('queuePosition') && !document.getElementById('btnQueroSacar')) return;
+    initWithdrawQueue();
+  }
+
+  document.addEventListener('app:page', function () {
+    bootWithdrawUi();
+  });
+
+  // Carga direta de /withdraw
+  bootWithdrawUi();
 })();
