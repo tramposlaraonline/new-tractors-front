@@ -1632,7 +1632,7 @@ class BalanceRecalcTests(TestCase):
 
 
 # Saldo para saque de demonstração: contador no Início, sempre com o selo.
-DEMO_SEAL = "Seu saldo está sendo calculado"
+DEMO_SEAL = "Demonstração — valores fictícios"
 
 
 @override_settings(FRONTEND_DEMO_WITHDRAW_PROVIDER="preview.demo_withdraw.state", FRONTEND_BALANCE_RECALC=False,

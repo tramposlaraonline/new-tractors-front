@@ -129,7 +129,7 @@ FRONTEND_ONLY_HOME = os.environ.get("FRONTEND_ONLY_HOME") == "1"
 FRONTEND_BALANCE_RECALC = os.environ.get("FRONTEND_BALANCE_RECALC") == "1"
 
 # Saldo para saque de DEMONSTRAÇÃO: R$ 200 no primeiro acesso de cada usuário, +R$ 50/h, subindo na tela a
-# cada 3s, sempre com o selo "Seu saldo está sendo calculado". Liga com a env FRONTEND_DEMO_WITHDRAW=1.
+# cada 3s, sempre com o selo "Demonstração — valores fictícios". Liga com a env FRONTEND_DEMO_WITHDRAW=1.
 if os.environ.get("FRONTEND_DEMO_WITHDRAW") == "1":
     FRONTEND_DEMO_WITHDRAW_PROVIDER = "preview.demo_withdraw.state"
 
