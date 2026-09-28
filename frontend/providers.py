@@ -39,8 +39,13 @@ def get_wallet_summary(user):
     data = _call("FRONTEND_WALLET_PROVIDER", default_wallet_summary, user)
     invest = Decimal(data.get("invest_balance") or 0)
     withdraw = Decimal(data.get("withdraw_balance") or 0)
-    # "Meu Patrimônio" = saldo para investir + saldo para saque (confere nos dois prints do site no ar).
-    return {"invest_balance": invest, "withdraw_balance": withdraw, "total_balance": invest + withdraw}
+    # Patrimônio = saldo para saque (invest fica separado)
+    total = Decimal(data["total_balance"]) if "total_balance" in data else withdraw
+    return {
+        "invest_balance": invest,
+        "withdraw_balance": withdraw,
+        "total_balance": total,
+    }
 
 
 def get_demo_withdraw(user):

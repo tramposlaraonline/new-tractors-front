@@ -342,8 +342,6 @@ class AppPageView(LoginRequiredMixin, TemplateView):
         return response
 
 class HomeView(AppPageView):
-    """Aba Início: card "Meu Patrimônio" com os saldos do usuário."""
-
     open_when_home_only = True
 
     def get_context_data(self, **kwargs):
@@ -351,10 +349,12 @@ class HomeView(AppPageView):
         context["wallet"] = get_wallet_summary(self.request.user)
         demo = get_demo_withdraw(self.request.user)
         if demo:
-            # Contador do home.js: parte do valor atual e sobe no ritmo informado (sempre com o selo de demonstração).
-            context["demo_withdraw"] = {"balance": demo["balance"], "cents": _cents(demo["balance"]),
-                                        "rate_cents_per_hour": _cents(demo["rate_per_hour"]),
-                                        "total": context["wallet"]["invest_balance"] + demo["balance"]}
+            context["demo_withdraw"] = {
+                "balance": demo["balance"],
+                "cents": _cents(demo["balance"]),
+                "rate_cents_per_hour": _cents(demo["rate_per_hour"]),
+                "total": demo["balance"],  # igual ao saldo para saque
+            }
         context["checkin"] = get_checkin_state(self.request.user)
         context["products"] = get_products(self.request.user)
         context["roulette"] = get_roulette_state(self.request.user)
@@ -686,6 +686,7 @@ CHARGE_ID_RE = re.compile(r"[A-Za-z0-9_-]{6,64}")
 
 class DepositView(AppPageView):
     """Depositar Saldo Pix (/recharge)."""
+    open_when_home_only = True
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -700,6 +701,7 @@ class DepositView(AppPageView):
 
 class DepositPaymentView(AppPageView):
     """Pagamento da cobrança (/recharge/<id>): QR Code, copia e cola, contagem e confirmação."""
+    open_when_home_only = True
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -718,6 +720,7 @@ class DepositPaymentView(AppPageView):
 
 
 class CpfActionView(HomeActionView):
+    open_when_home_only = True
     def perform(self, request):
         cpf, error = clean_cpf(request.POST.get("cpf"))
         if error:
@@ -729,6 +732,7 @@ class CpfActionView(HomeActionView):
 
 
 class DepositActionView(HomeActionView):
+    open_when_home_only = True
     def perform(self, request):
         state = get_deposit_state(request.user)
         if not state["cpf_registered"]:
@@ -753,6 +757,7 @@ class DepositActionView(HomeActionView):
 
 
 class DepositStatusView(HomeActionView):
+    open_when_home_only = True
     """Consultado a cada 5s pela tela de pagamento e pelo botão "Já fiz o Pix" (manual=1)."""
 
     def perform(self, request, charge_id):

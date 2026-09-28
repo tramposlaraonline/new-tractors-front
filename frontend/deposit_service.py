@@ -18,9 +18,12 @@ def _profile(user) -> UserProfile:
 
 def wallet_summary(user):
     p = _profile(user)
+    invest = p.invest_balance or Decimal("0")
+    withdraw = p.withdraw_balance or Decimal("0")
     return {
-        "invest_balance": p.invest_balance or Decimal("0"),
-        "withdraw_balance": p.withdraw_balance or Decimal("0"),
+        "invest_balance": invest,       # só sobe com depósito pago
+        "withdraw_balance": withdraw,   # saldo de saque
+        "total_balance": withdraw,      # Meu Patrimônio = saldo para saque
     }
 
 
