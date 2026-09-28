@@ -1,4 +1,5 @@
 from urllib.parse import urlparse
+from decimal import Decimal
 
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
@@ -82,3 +83,54 @@ class VipCharge(models.Model):
 
     def __str__(self):
         return f"VIP {self.transaction_id} ({self.status})"
+    
+class UserProfile(models.Model):
+    """Dados extras do usuário (CPF, VIP, saldos persistidos)."""
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile"
+    )
+    cpf = models.CharField(max_length=11, blank=True, db_index=True)
+    is_vip = models.BooleanField(default=False)
+    vip_since = models.DateTimeField(null=True, blank=True)
+    invest_balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0"))
+    withdraw_balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0"))
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Profile({self.user_id})"
+
+
+class DepositCharge(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pendente"),
+        ("paid", "Pago"),
+        ("expired", "Expirado"),
+        ("failed", "Falhou"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="deposit_charges"
+    )
+    transaction_id = models.CharField(max_length=64, unique=True, db_index=True)
+    amount_cents = models.PositiveIntegerField()
+    br_code = models.TextField(blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="pending")
+    idempotency_key = models.CharField(max_length=64, blank=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Depósito PIX"
+        verbose_name_plural = "Depósitos PIX"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "idempotency_key"],
+                name="uniq_deposit_idempotency",
+                condition=~models.Q(idempotency_key=""),
+            )
+        ]
+
+    def __str__(self):
+        return f"Deposit {self.transaction_id} ({self.status})"

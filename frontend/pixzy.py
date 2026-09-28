@@ -1,4 +1,4 @@
-"""Cliente mínimo da API Pixzy para o plano VIP."""
+"""Cliente Pixzy: VIP + depósitos."""
 import logging
 import requests
 from django.conf import settings
@@ -8,39 +8,58 @@ logger = logging.getLogger(__name__)
 VIP_AMOUNT = getattr(settings, "VIP_AMOUNT_CENTS", 4790)
 
 
-def create_vip_transaction(user, webhook_url: str) -> dict:
+def _token_and_base():
+    token = getattr(settings, "PIXZY_API_TOKEN", "") or ""
+    base = getattr(settings, "PIXZY_API_BASE", "https://app.pixzypay.com/api").rstrip("/")
+    return token, base
+
+
+def _client_doc(user):
+    doc = getattr(user, "cpf", None)
+    if not doc:
+        profile = getattr(user, "profile", None)
+        doc = getattr(profile, "cpf", None) if profile else None
+    if not doc:
+        try:
+            from .models import UserProfile
+            p = UserProfile.objects.filter(user=user).first()
+            doc = p.cpf if p else None
+        except Exception:
+            doc = None
+    return str(doc or "00000000000").replace(".", "").replace("-", "")
+
+
+def create_transaction(*, user, amount_cents: int, webhook_url: str, product: str, item_name: str) -> dict:
     """
     Cria cobrança PIX na Pixzy.
-    Retorna: {ok, transaction_id, br_code, amount} ou {ok: False, message}
+    amount_cents: valor em centavos (mín. 500 = R$ 5,00).
     """
-    token = getattr(settings, "PIXZY_API_TOKEN", "")
-    base = getattr(settings, "PIXZY_API_BASE", "https://app.pixzypay.com/api").rstrip("/")
-
+    token, base = _token_and_base()
     if not token:
-        return {"ok": False, "message": "Pagamento VIP indisponível no momento."}
+        return {"ok": False, "message": "Gateway de pagamento não configurado."}
+
+    if amount_cents < 500:
+        return {"ok": False, "message": "Valor mínimo é R$ 5,00."}
 
     name = (user.get_full_name() or "").strip() or user.get_username()
     email = getattr(user, "email", "") or f"{user.get_username()}@newtractors.local"
-    # username no projeto é o celular (só dígitos)
     phone = user.get_username()
-    # CPF: ajuste se você tiver o campo real no user/profile
-    doc = getattr(user, "cpf", None) or getattr(getattr(user, "profile", None), "cpf", None) or "00000000000"
 
     payload = {
-        "amount": VIP_AMOUNT,
+        "amount": int(amount_cents),
         "client_name": name,
         "client_email": email,
-        "client_doc": str(doc).replace(".", "").replace("-", ""),
+        "client_doc": _client_doc(user),
         "client_phone": phone,
         "webhook_url": webhook_url,
         "metadata": {
             "user_id": user.id,
-            "product": "vip",
+            "product": product,
         },
         "items": [
             {
-                "name": "Plano VIP New Tractors",
-                "price": VIP_AMOUNT,
+                "name": item_name,
+                "price": int(amount_cents),
                 "quantity": 1,
             }
         ],
@@ -72,16 +91,35 @@ def create_vip_transaction(user, webhook_url: str) -> dict:
             "ok": True,
             "transaction_id": str(tx_id),
             "br_code": br_code,
-            "amount": int(data.get("amount") or VIP_AMOUNT),
+            "amount": int(data.get("amount") or amount_cents),
         }
     except requests.RequestException as e:
         logger.exception("Pixzy connection error: %s", e)
         return {"ok": False, "message": "Falha de conexão com o gateway. Tente novamente."}
 
 
+def create_vip_transaction(user, webhook_url: str) -> dict:
+    return create_transaction(
+        user=user,
+        amount_cents=VIP_AMOUNT,
+        webhook_url=webhook_url,
+        product="vip",
+        item_name="Plano VIP New Tractors",
+    )
+
+
+def create_deposit_transaction(user, amount_cents: int, webhook_url: str) -> dict:
+    return create_transaction(
+        user=user,
+        amount_cents=amount_cents,
+        webhook_url=webhook_url,
+        product="deposit",
+        item_name="Depósito PIX New Tractors",
+    )
+
+
 def get_transaction(transaction_id: str) -> dict | None:
-    token = getattr(settings, "PIXZY_API_TOKEN", "")
-    base = getattr(settings, "PIXZY_API_BASE", "https://app.pixzypay.com/api").rstrip("/")
+    token, base = _token_and_base()
     if not token:
         return None
     try:

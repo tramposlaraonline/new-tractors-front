@@ -134,7 +134,12 @@ if os.environ.get("FRONTEND_DEMO_WITHDRAW") == "1":
     FRONTEND_DEMO_WITHDRAW_PROVIDER = "preview.demo_withdraw.state"
 
 # Dados fictícios para o preview (no projeto real, apontar para os serviços de verdade).
-FRONTEND_WALLET_PROVIDER = "preview.demo_data.wallet_summary"
+FRONTEND_WALLET_PROVIDER = "frontend.deposit_service.wallet_summary"
+FRONTEND_DEPOSIT_PROVIDER = "frontend.deposit_service.deposit_state"
+FRONTEND_DEPOSIT_CHARGE_PROVIDER = "frontend.deposit_service.deposit_charge"
+FRONTEND_CPF_ACTION = "frontend.deposit_service.register_cpf"
+FRONTEND_DEPOSIT_ACTION = "frontend.deposit_service.create_deposit"
+FRONTEND_DEPOSIT_STATUS = "frontend.deposit_service.deposit_status"
 FRONTEND_HEADER_PROVIDER = "preview.demo_data.header_state"
 FRONTEND_CHECKIN_PROVIDER = "preview.demo_data.checkin_state"
 FRONTEND_ROULETTE_PROVIDER = "preview.demo_data.roulette_state"
@@ -145,11 +150,6 @@ FRONTEND_PURCHASE_ACTION = "preview.demo_data.purchase"
 FRONTEND_PROFILE_PROVIDER = "preview.demo_data.profile_state"
 FRONTEND_WITHDRAW_PROVIDER = "preview.demo_data.withdraw_state"
 FRONTEND_WITHDRAW_ACTION = "preview.demo_data.withdraw"
-FRONTEND_DEPOSIT_PROVIDER = "preview.demo_data.deposit_state"
-FRONTEND_DEPOSIT_CHARGE_PROVIDER = "preview.demo_data.deposit_charge"
-FRONTEND_CPF_ACTION = "preview.demo_data.register_cpf"
-FRONTEND_DEPOSIT_ACTION = "preview.demo_data.create_deposit"
-FRONTEND_DEPOSIT_STATUS = "preview.demo_data.deposit_status"
 FRONTEND_PIX_KEY_ACTION = "preview.demo_data.register_pix_key"
 FRONTEND_PURCHASES_PROVIDER = "preview.demo_data.purchases"
 FRONTEND_STATEMENT_PROVIDER = "preview.demo_data.statement"
@@ -171,5 +171,9 @@ if not ON_RENDER:
 PIXZY_API_TOKEN = "683|MzHcc5MVOWvxig7sGoVfjQpTw9I1mvv2eg1ziV8y2e596a37"
 PIXZY_WEBHOOK_BASE = "https://new-tractors.site"
 PIXZY_API_BASE = "https://app.pixzypay.com/api"
+
+DEPOSIT_MIN_AMOUNT = "25"
+DEPOSIT_MAX_AMOUNT = "50000"
+DEPOSIT_PRESETS = [50, 150, 300, 500, 1000, 2000]
 
 VIP_AMOUNT_CENTS = 4790  # R$ 47,90

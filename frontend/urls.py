@@ -75,4 +75,5 @@ urlpatterns = [
     path("acoes/vip/<str:transaction_id>/status", views.VipStatusView.as_view(), name="action_vip_status"),
 
     path("webhooks/pixzy/vip", views.PixzyVipWebhookView.as_view(), name="webhook_pixzy_vip"),
+    path("webhooks/pixzy/deposit", views.PixzyDepositWebhookView.as_view(), name="webhook_pixzy_deposit"),
 ]

@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.shortcuts import redirect
 from django.urls import reverse
 
-from .models import CommunicationChannels
+from .models import CommunicationChannels, UserProfile, DepositCharge, VipCharge
 
 
 @admin.register(CommunicationChannels)
@@ -26,3 +26,19 @@ class CommunicationChannelsAdmin(admin.ModelAdmin):
         if obj:
             return redirect(reverse("admin:frontend_communicationchannels_change", args=[obj.pk]))
         return redirect(reverse("admin:frontend_communicationchannels_add"))
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "cpf", "is_vip", "invest_balance", "withdraw_balance")
+    search_fields = ("user__username", "cpf")
+
+@admin.register(DepositCharge)
+class DepositChargeAdmin(admin.ModelAdmin):
+    list_display = ("transaction_id", "user", "amount_cents", "status", "created_at", "paid_at")
+    list_filter = ("status",)
+    search_fields = ("transaction_id", "user__username")
+
+@admin.register(VipCharge)
+class VipChargeAdmin(admin.ModelAdmin):
+    list_display = ("transaction_id", "user", "amount_cents", "status", "created_at", "paid_at")
+    list_filter = ("status",)

@@ -28,8 +28,9 @@ from .forms import PhoneLoginForm, RegisterForm, mobile_to_username, normalize_p
 from .channels import get_channels
 from .qr import pix_qr_data_uri, safe_image_src
 from .validators import PIX_KEY_TYPES, clean_cpf, clean_pix_key
-from .models import VipCharge
+from .models import VipCharge, DepositCharge, UserProfile
 from .pixzy import create_vip_transaction, get_transaction, VIP_AMOUNT
+from .deposit_service import mark_deposit_paid
 from .providers import (
     get_checkin_state, get_demo_withdraw, get_header_state, get_products, get_profile_state, get_roulette_state, get_wallet_summary,
     get_deposit_charge, get_deposit_state, get_notifications, get_purchases, get_team,
@@ -1109,20 +1110,10 @@ def _mark_vip_paid(charge: VipCharge):
     charge.paid_at = timezone.now()
     charge.save(update_fields=["status", "paid_at"])
 
-    user = charge.user
-    # Ajuste conforme seu model de perfil
-    profile = getattr(user, "profile", None)
-    if profile is not None:
-        if hasattr(profile, "is_vip"):
-            profile.is_vip = True
-        if hasattr(profile, "vip_since"):
-            profile.vip_since = timezone.now()
-        profile.save()
-    else:
-        # fallback: flag no próprio user se existir
-        if hasattr(user, "is_vip"):
-            user.is_vip = True
-            user.save(update_fields=["is_vip"])
+    profile, _ = UserProfile.objects.get_or_create(user=charge.user)
+    profile.is_vip = True
+    profile.vip_since = timezone.now()
+    profile.save(update_fields=["is_vip", "vip_since", "updated_at"])
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -1152,6 +1143,37 @@ class PixzyVipWebhookView(View):
         elif event in ("expired", "failed") or (data.get("status") or "").lower() in ("expired", "failed"):
             if charge.status == "pending":
                 charge.status = "expired" if event == "expired" else "failed"
+                charge.save(update_fields=["status"])
+
+        return JsonResponse({"ok": True})
+    
+@method_decorator(csrf_exempt, name="dispatch")
+class PixzyDepositWebhookView(View):
+    """Webhook Pixzy depósitos: POST /webhooks/pixzy/deposit"""
+
+    def post(self, request):
+        try:
+            payload = json.loads(request.body.decode("utf-8") or "{}")
+        except json.JSONDecodeError:
+            return JsonResponse({"ok": False}, status=400)
+
+        event = (payload.get("event") or payload.get("type") or "").lower()
+        data = payload.get("data") or payload
+        tx_id = data.get("transaction_id") or data.get("id")
+
+        if not tx_id:
+            return JsonResponse({"ok": True})
+
+        charge = DepositCharge.objects.filter(transaction_id=tx_id).first()
+        if not charge:
+            return JsonResponse({"ok": True})
+
+        status = (data.get("status") or "").lower()
+        if event == "paid" or status in ("paid", "approved", "completed"):
+            mark_deposit_paid(charge)
+        elif event in ("expired", "failed") or status in ("expired", "failed", "cancelled"):
+            if charge.status == "pending":
+                charge.status = "expired" if event == "expired" or status == "expired" else "failed"
                 charge.save(update_fields=["status"])
 
         return JsonResponse({"ok": True})
