@@ -564,8 +564,6 @@ class PurchaseActionView(HomeActionView):
     open_when_home_only = True
 
     def perform(self, request, product_id):
-        if balance_recalc():  # ninguém compra com um saldo que não consegue ver
-            return 503, {"ok": False, "locked": True, "message": RECALC_LOCKED_MESSAGE}
         if product_id not in {p["id"] for p in get_products(request.user)}:
             return 404, {"ok": False, "message": "Equipamento não encontrado."}
         key = request.headers.get("X-Idempotency-Key", "")

@@ -31,7 +31,7 @@
     <a href="{% url 'frontend:home' %}" class="app-sidebar-logo" data-spa-link data-tab="home" aria-label="New Tractors — Início">
       <img src="{% static 'frontend/img/logo-new-tractors.png' %}" alt="" width="1851" height="850">
     </a>
-    <a href="{% url 'frontend:deposit' %}" class="app-sidebar-deposit{% if home_only %} is-locked{% endif %}" data-spa-link data-tab="deposit"{% if home_only %} data-locked aria-disabled="true"{% endif %}>
+    <a href="{% url 'frontend:deposit' %}" class="app-sidebar-deposit" data-spa-link data-tab="deposit">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="m8 12 4 4 4-4"/></svg>
       <span>Depositar Saldo</span>
     </a>
