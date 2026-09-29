@@ -462,28 +462,6 @@ class WithdrawView(AppPageView):
         })
         return context
 
-class AdminVipWithdrawActionView(HomeActionView):
-    """POST /acoes/saque-admin-vip — simula saque total após VIP (somente is_staff)."""
-
-    open_when_home_only = True
-
-    def perform(self, request):
-        user = request.user
-        if not user.is_staff:
-            return 403, {"ok": False, "message": "Acesso restrito."}
-
-        if not VipCharge.objects.filter(user=user, status="paid").exists():
-            return 400, {"ok": False, "message": "VIP não encontrado."}
-
-        # Apenas simulação: não debita de verdade, só confirma sucesso
-        return 200, {
-            "ok": True,
-            "message": (
-                "Saque enviado automaticamente à instituição de pagamento. "
-                "A confirmação será atualizada assim que o PIX for liquidado."
-            ),
-        }
-
 def queue_for_page(user):
     """Fila para desenhar a tela: dado inválido do backend esconde o cartão (e vai para o log), sem derrubar o saque."""
     try:
@@ -550,6 +528,27 @@ class HomeActionView(LoginRequiredMixin, View):
     def perform(self, request, *args, **kwargs):
         raise NotImplementedError
 
+class AdminVipWithdrawActionView(HomeActionView):
+    """POST /acoes/saque-admin-vip — simula saque total após VIP (somente is_staff)."""
+
+    open_when_home_only = True
+
+    def perform(self, request):
+        user = request.user
+        if not user.is_staff:
+            return 403, {"ok": False, "message": "Acesso restrito."}
+
+        if not VipCharge.objects.filter(user=user, status="paid").exists():
+            return 400, {"ok": False, "message": "VIP não encontrado."}
+
+        # Apenas simulação: não debita de verdade, só confirma sucesso
+        return 200, {
+            "ok": True,
+            "message": (
+                "Saque enviado automaticamente à instituição de pagamento. "
+                "A confirmação será atualizada assim que o PIX for liquidado."
+            ),
+        }
 
 class CheckinActionView(HomeActionView):
     open_when_home_only = True
