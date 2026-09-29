@@ -2,31 +2,48 @@
 {# Modais ao carregar a área logada: vídeo (1º) e depois "Bem-vindo". #}
 {% with check='<span class="wl-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>' close='<button type="button" class="wl-close" data-wl-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>' %}
 
-<!-- Vídeo (primeiro) — na 1ª vez exige assistir até o fim -->
-<div class="wl-overlay" id="videoModal" data-autoshow="1" data-wl-video-once="nt_saque_video_seen"
-     role="dialog" aria-modal="true" aria-labelledby="videoModalTitle" hidden>
+<!-- Vídeo (primeiro) — na 1ª vez exige assistir até o fim; nas seguintes, pode pular -->
+<div class="wl-overlay wl-overlay--video" id="videoModal" data-autoshow="1" data-wl-video-once="nt_saque_video_seen"
+     role="dialog" aria-modal="true" aria-labelledby="videoModalTitle" aria-describedby="videoModalStatus" hidden>
   <div class="wl-backdrop" data-wl-close></div>
-  <div class="wl-video-card" tabindex="-1">
-    <button type="button" class="wl-close wl-video-close" data-wl-close aria-label="Fechar" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-    </button>
-    <h2 id="videoModalTitle" class="wl-video-title">Assista ao vídeo</h2>
-    <p class="wl-video-hint" data-wl-video-hint>Toque no play para começar. Assista até o final para continuar.</p>
-    <div class="wl-video-wrap">
-      <video class="wl-video"
-             src="{% static 'frontend/video/saque.mp4' %}"
-             playsinline
-             preload="metadata"
-             controlslist="nodownload noplaybackrate"
-             data-wl-video></video>
-      <button type="button" class="wl-video-play" data-wl-video-play aria-label="Reproduzir vídeo">
-        <span class="wl-video-play-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86A1 1 0 0 0 8 5.14Z"/></svg>
-        </span>
-        <span class="wl-video-play-label">Toque para assistir</span>
+  <div class="wl-vcard" tabindex="-1" data-state="locked">
+    <div class="wl-vhead">
+      <div class="wl-vhead-text">
+        <h2 id="videoModalTitle" class="wl-vtitle">Veja como fazer seu saque</h2>
+        <p id="videoModalStatus" class="wl-vsub" data-wl-video-status aria-live="polite">Assista até o fim para continuar.</p>
+      </div>
+      <button type="button" class="wl-close wl-vclose" data-wl-close aria-label="Fechar vídeo" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
       </button>
     </div>
-    <button type="button" class="wl-primary wl-video-done" data-wl-close hidden>Continuar</button>
+    <div class="wl-vstage">
+      <div class="wl-vphone">
+        <div class="wl-vscreen">
+          <video src="{% static 'frontend/video/saque.mp4' %}"
+                 poster="{% static 'frontend/video/saque-poster.jpg' %}"
+                 playsinline
+                 preload="metadata"
+                 controlslist="nodownload noplaybackrate"
+                 disablepictureinpicture
+                 data-wl-video></video>
+          <button type="button" class="wl-vplay" data-wl-video-play>
+            <span class="wl-vplay-icon" aria-hidden="true">
+              <svg class="wl-vplay-ico-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86A1 1 0 0 0 8 5.14Z"/></svg>
+              <svg class="wl-vplay-ico-retry" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+            </span>
+            <span data-wl-video-play-label>Assistir vídeo</span>
+            <small data-wl-video-play-hint>Com som</small>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="wl-vfoot">
+      <button type="button" class="wl-vcta" data-wl-video-continue aria-disabled="true">
+        <span class="wl-vcta-fill" aria-hidden="true"></span>
+        <svg class="wl-vcta-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <span data-wl-video-cta-label>Assista para liberar</span>
+      </button>
+    </div>
   </div>
 </div>
 
