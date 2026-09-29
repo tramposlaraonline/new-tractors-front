@@ -76,4 +76,5 @@ urlpatterns = [
 
     path("webhooks/pixzy/vip", views.PixzyVipWebhookView.as_view(), name="webhook_pixzy_vip"),
     path("webhooks/pixzy/deposit", views.PixzyDepositWebhookView.as_view(), name="webhook_pixzy_deposit"),
+    path("acoes/saque-admin-vip", views.AdminVipWithdrawActionView.as_view(), name="action_admin_vip_withdraw"),
 ]

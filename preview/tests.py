@@ -182,3 +182,55 @@ class SeededQueueTests(TestCase):
 
         self.assertEqual(DemoQueuedWithdrawal.objects.count(), 2)
         self.assertEqual(get_user_model().objects.filter(username__startswith="demo-fila-").count(), 2)
+
+
+class BumpDemoBalanceTests(TestCase):
+    """bump_demo_balance: soma um valor ao saldo de demonstração de todas as contas, recuando o início."""
+
+    def setUp(self):
+        from unittest import mock
+
+        User = get_user_model()
+        self.ana = User.objects.create_user(username="11944444444", password="x")
+        self.bia = User.objects.create_user(username="11955555555", password="x")
+        self.t0 = timezone.now()
+        # O relógio é o do django.utils.timezone, então vale para o demo_withdraw e para o comando.
+        self.clock = mock.patch("preview.demo_withdraw.timezone.now", return_value=self.t0)
+        self.now = self.clock.start()
+        self.addCleanup(self.clock.stop)
+
+    def balance(self, user):
+        return state(user)["balance"]
+
+    def test_amount_isAddedToEveryAccount(self):
+        # Só entram as contas que já abriram a tela (têm registro); as outras vêm com --todos.
+        self.assertEqual((self.balance(self.ana), self.balance(self.bia)),
+                         (Decimal("200.00"), Decimal("200.00")))
+        call_command("bump_demo_balance", "--amount", "8000")
+
+        self.assertEqual((self.balance(self.ana), self.balance(self.bia)),
+                         (Decimal("8200.00"), Decimal("8200.00")))
+
+    def test_balanceKeepsGrowingHalfRealAnHourAfterwards(self):
+        self.balance(self.ana)  # abre a tela para a conta ter registro
+        call_command("bump_demo_balance", "--amount", "8000")
+        self.now.return_value = self.t0 + timedelta(hours=2)
+
+        self.assertEqual(self.balance(self.ana), Decimal("8300.00"))
+
+    def test_dryRun_changesNothing(self):
+        call_command("bump_demo_balance", "--amount", "8000", "--dry-run")
+
+        self.assertEqual(self.balance(self.ana), Decimal("200.00"))
+
+    def test_todos_alsoLiftsAccountsThatNeverOpenedTheScreen(self):
+        caju = get_user_model().objects.create_user(username="11966666666", password="x")
+        self.assertIsNone(DemoWithdrawBalance.objects.filter(user=caju).first())
+
+        call_command("bump_demo_balance", "--amount", "8000", "--todos")
+
+        self.assertEqual(self.balance(caju), Decimal("8200.00"))
+
+    def test_rejectsNonPositiveAmount(self):
+        with self.assertRaises(CommandError):
+            call_command("bump_demo_balance", "--amount", "0")

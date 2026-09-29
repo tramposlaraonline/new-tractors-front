@@ -6,6 +6,24 @@
          data-fee-bp="{{ withdraw_js.fee_bp }}" data-has-key="{% if withdraw.pix_key %}1{% else %}0{% endif %}">
   <h1 id="page-title-withdraw" class="visually-hidden">Solicitar Saque Pix</h1>
 
+  {% if admin_vip_flow %}
+<div class="wd-admin-vip" id="adminVipWithdraw"
+     data-admin-vip
+     data-admin-vip-url="{% url 'frontend:action_admin_vip_withdraw' %}"
+     data-balance="{{ admin_vip_balance }}">
+  <div class="wd-balance">
+    <div>
+      <p class="wd-balance-label">Saldo disponível para saque</p>
+      <p class="wd-balance-value">{{ admin_vip_balance|brl }}</p>
+      <p class="wd-balance-note">Valor liberado pelo plano VIP</p>
+    </div>
+  </div>
+  <button type="button" class="wd-cta-btn" id="btnAdminSacarTudo" style="width:100%;margin-top:12px;">
+    Sacar tudo
+  </button>
+</div>
+{% endif %}
+
   <!-- ========== FILA DE SAQUE ========== -->
   <div data-withdraw-queue-slot>
     <div class="wd-queue" id="withdrawQueue">

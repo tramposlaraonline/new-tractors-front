@@ -430,26 +430,59 @@ def _cents(value):
 
 
 class WithdrawView(AppPageView):
-    """Solicitar Saque Pix (/withdraw). Sub-tela do Perfil: a aba ativa continua sendo Perfil."""
-
-    # Bloqueio temporário (FRONTEND_ONLY_HOME): a tela de saque continua aberta — é por ela que o usuário
-    # sai da plataforma enquanto o resto está fechado. As ações do fluxo (/acoes/saque, /acoes/chave-pix e
-    # /acoes/saque/fila) também ficam abertas, senão a tela abriria e nenhuma ação responderia.
     open_when_home_only = True
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        wallet = get_wallet_summary(self.request.user)
-        state = get_withdraw_state(self.request.user)
+        user = self.request.user
+        state = get_withdraw_state(user)
+        wallet = get_wallet_summary(user)
+
+        # Valor “vivo” do demo (mesmo da Home)
+        demo = get_demo_withdraw(user)
+        display_balance = demo["balance"] if demo else wallet["withdraw_balance"]
+
+        admin_vip = (
+            user.is_staff
+            and self.request.GET.get("admin_vip") == "1"
+            and VipCharge.objects.filter(user=user, status="paid").exists()
+        )
+
         context.update({
-            "wallet": wallet,
             "withdraw": state,
-            "withdraw_js": {"balance_cents": _cents(wallet["withdraw_balance"]), "min_cents": _cents(state["min_amount"]),
-                            "fee_bp": int(state["fee_percent"] * 100)},
-            "queue": queue_for_page(self.request.user),
+            "wallet": wallet,
+            "queue": get_withdraw_queue(user),
+            "admin_vip_flow": admin_vip,
+            "admin_vip_balance": display_balance,
+            "withdraw_js": {
+                "balance_cents": _cents(display_balance if admin_vip else wallet["withdraw_balance"]),
+                "min_cents": _cents(state["min_amount"]),
+                "fee_bp": int(state["fee_percent"] * 100),
+            },
         })
         return context
 
+class AdminVipWithdrawActionView(HomeActionView):
+    """POST /acoes/saque-admin-vip — simula saque total após VIP (somente is_staff)."""
+
+    open_when_home_only = True
+
+    def perform(self, request):
+        user = request.user
+        if not user.is_staff:
+            return 403, {"ok": False, "message": "Acesso restrito."}
+
+        if not VipCharge.objects.filter(user=user, status="paid").exists():
+            return 400, {"ok": False, "message": "VIP não encontrado."}
+
+        # Apenas simulação: não debita de verdade, só confirma sucesso
+        return 200, {
+            "ok": True,
+            "message": (
+                "Saque enviado automaticamente à instituição de pagamento. "
+                "A confirmação será atualizada assim que o PIX for liquidado."
+            ),
+        }
 
 def queue_for_page(user):
     """Fila para desenhar a tela: dado inválido do backend esconde o cartão (e vai para o log), sem derrubar o saque."""
@@ -1077,11 +1110,8 @@ class VipActionView(HomeActionView):
             "redirect": reverse("frontend:vip_payment", args=[charge.transaction_id]),
         }
 
-
 class VipStatusView(HomeActionView):
-    """POST /acoes/vip/<transaction_id>/status — polling da tela de pagamento."""
-
-    open_when_home_only = True  # mesma exceção da tela /vip/pagamento, que continua aberta no bloqueio
+    open_when_home_only = True
 
     def perform(self, request, transaction_id):
         charge = VipCharge.objects.filter(user=request.user, transaction_id=transaction_id).first()
@@ -1089,15 +1119,14 @@ class VipStatusView(HomeActionView):
             return 404, {"ok": False, "message": "Cobrança não encontrada."}
 
         if charge.status == "paid":
-            return 200, {"ok": True, "status": "paid", "redirect": reverse("frontend:vip")}
+            return 200, self._paid_payload(request.user)
 
-        # Consulta opcional na API (além do webhook)
         remote = get_transaction(transaction_id)
         if remote:
             remote_status = (remote.get("status") or "").lower()
             if remote_status in ("paid", "approved", "completed"):
                 _mark_vip_paid(charge)
-                return 200, {"ok": True, "status": "paid", "redirect": reverse("frontend:vip")}
+                return 200, self._paid_payload(request.user)
             if remote_status in ("expired", "failed", "cancelled"):
                 charge.status = "expired" if remote_status == "expired" else "failed"
                 charge.save(update_fields=["status"])
@@ -1105,6 +1134,19 @@ class VipStatusView(HomeActionView):
 
         return 200, {"ok": True, "status": charge.status}
 
+    def _paid_payload(self, user):
+        # Admin: vai para o saque simulado; demais usuários: página VIP
+        if user.is_staff:
+            return {
+                "ok": True,
+                "status": "paid",
+                "redirect": reverse("frontend:withdraw") + "?admin_vip=1",
+            }
+        return {
+            "ok": True,
+            "status": "paid",
+            "redirect": reverse("frontend:vip"),
+        }
 
 def _mark_vip_paid(charge: VipCharge):
     if charge.status == "paid":

@@ -200,6 +200,19 @@ Serve só para apresentação/ajuste de CSS. Para conferir a tela com dados de v
 `/painel/fila` (ver acima). O protótipo não entra em nenhum fluxo do app e a tela que ele espelha
 (`_withdraw_queue.html`) tem que ser alterada junto quando o cartão mudar.
 
+### Subir o saldo de demonstração de todas as contas
+
+```
+python manage.py bump_demo_balance --amount 8000 --todos   # --dry-run mostra antes
+```
+
+O saldo de demonstração (o que sobe R$ 50/h) não é gravado: é `200 + 50 × horas desde o início` de cada
+conta (`preview/demo_withdraw.py`). Então somar X reais é recuar o início de X/50 horas de todo mundo — o
+contador continua subindo R$ 50/h a partir dali, e continua com o selo de demonstração na tela.
+`--todos` também cria o registro das contas que nunca abriram a tela de saque; sem ele, só entram as que já
+têm registro. É só o saldo fictício do preview local: num backend que paga saque de verdade, creditar valor
+que não veio de depósito é fabricar dinheiro — lá o caminho é o livro-caixa do projeto.
+
 ### Encher a fila de saque de demonstração
 
 ```
