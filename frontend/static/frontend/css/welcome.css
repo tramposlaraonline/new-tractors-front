@@ -329,17 +329,18 @@ html.wl-lock {
   background-color: rgba(255, 255, 255, 0.92);
 }
 
-/* Modal de vídeo vertical (gravado no celular) */
+/* Modal de vídeo vertical */
 .wl-video-card {
   position: relative;
   display: flex;
   flex-direction: column;
-  width: min(100%, 380px);
-  max-height: calc(100dvh - 16px);
+  width: auto;
+  max-width: min(100%, 400px);
+  max-height: calc(100dvh - 12px);
   overflow: hidden;
   border-radius: 22px;
   background-color: #0b1a14;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
   outline: none;
   opacity: 0;
   transform: translateY(14px) scale(0.97);
@@ -353,58 +354,66 @@ html.wl-lock {
 }
 
 .wl-video-title {
-  position: relative;
-  z-index: 2;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
   margin: 0;
-  padding: 14px 44px 2px 14px;
+  padding: 14px 48px 28px 14px;
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 800;
   line-height: 22px;
   color: #FBF9F4;
   text-align: center;
-  background: linear-gradient(180deg, rgba(11, 26, 20, 0.92) 0%, rgba(11, 26, 20, 0.55) 70%, transparent 100%);
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
 }
 
 .wl-video-hint {
-  position: relative;
-  z-index: 2;
+  position: absolute;
+  top: 38px;
+  left: 0;
+  right: 0;
+  z-index: 3;
   margin: 0;
-  padding: 0 16px 10px;
+  padding: 0 16px;
   font-size: 12.5px;
   line-height: 16px;
-  color: rgba(251, 249, 244, 0.85);
+  color: rgba(251, 249, 244, 0.9);
   text-align: center;
-  background: linear-gradient(180deg, rgba(11, 26, 20, 0.55) 0%, transparent 100%);
+  pointer-events: none;
 }
 
 .wl-video-hint[hidden] {
   display: none !important;
 }
 
-/* Preenche o modal; vídeo cobre a área (sem faixa preta) */
+/* Altura fixa + proporção do vídeo (496x1080): o card acompanha a largura, sem cortar a tela gravada */
 .wl-video-wrap {
   position: relative;
-  flex: 1 1 auto;
-  width: 100%;
-  min-height: min(72dvh, 620px);
-  max-height: min(78dvh, 680px);
-  margin: 0;
-  border-radius: 0;
+  width: auto;
+  max-width: 100%;
+  height: min(78dvh, 720px);
+  aspect-ratio: 496 / 1080;
+  flex: 0 0 auto;
   overflow: hidden;
   background: #000;
 }
 
 .wl-video {
-  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center center;
   background: #000;
 }
 
-/* Botão central: toque para assistir (pulsando) */
+/* Play central pulsando */
 .wl-video-play {
   position: absolute;
   inset: 0;
@@ -417,7 +426,7 @@ html.wl-lock {
   border: none;
   margin: 0;
   padding: 16px;
-  background: rgba(8, 20, 15, 0.4);
+  background: rgba(8, 20, 15, 0.42);
   color: #FFFFFF;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -459,11 +468,6 @@ html.wl-lock {
   outline-offset: -4px;
 }
 
-.wl-video-play:hover .wl-video-play-icon,
-.wl-video-play:active .wl-video-play-icon {
-  transform: scale(1.06);
-}
-
 @keyframes wl-play-pulse {
   0% {
     transform: scale(1);
@@ -493,7 +497,7 @@ html.wl-lock {
 .wl-video-close {
   top: 10px;
   right: 10px;
-  z-index: 4;
+  z-index: 5;
   width: 36px;
   height: 36px;
   background-color: rgba(255, 255, 255, 0.95);
@@ -507,10 +511,11 @@ html.wl-lock {
 .wl-video-done {
   position: relative;
   z-index: 3;
-  width: auto;
+  width: 100%;
   margin: 0;
-  border-radius: 0 0 22px 22px;
+  border-radius: 0;
   min-height: 50px;
+  flex: 0 0 auto;
 }
 
 .wl-overlay.is-video-locked .wl-backdrop {
