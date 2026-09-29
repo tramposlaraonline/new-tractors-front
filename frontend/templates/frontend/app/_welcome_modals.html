@@ -11,15 +11,20 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
     </button>
     <h2 id="videoModalTitle" class="wl-video-title">Assista ao vídeo</h2>
-    <p class="wl-video-hint" data-wl-video-hint>Assista até o final para continuar.</p>
+    <p class="wl-video-hint" data-wl-video-hint>Toque no play para começar. Assista até o final para continuar.</p>
     <div class="wl-video-wrap">
       <video class="wl-video"
              src="{% static 'frontend/video/saque.mp4' %}"
-             controls
              playsinline
-             preload="auto"
-             controlslist="nodownload"
+             preload="metadata"
+             controlslist="nodownload noplaybackrate"
              data-wl-video></video>
+      <button type="button" class="wl-video-play" data-wl-video-play aria-label="Reproduzir vídeo">
+        <span class="wl-video-play-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86A1 1 0 0 0 8 5.14Z"/></svg>
+        </span>
+        <span class="wl-video-play-label">Toque para assistir</span>
+      </button>
     </div>
     <button type="button" class="wl-primary wl-video-done" data-wl-close hidden>Continuar</button>
   </div>

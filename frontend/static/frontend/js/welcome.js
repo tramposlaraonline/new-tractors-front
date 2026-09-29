@@ -2,7 +2,7 @@
  * New Tractors — Modais automáticos ao carregar a página ([data-autoshow="ordem"]).
  * Mostra um por vez, na ordem; ao fechar um, abre o próximo. Esc, clique fora e botões [data-wl-close] fecham.
  * Modal de vídeo (data-wl-video-once): na 1ª vez exige assistir até o fim antes de liberar o fechamento.
- * Autocontido (não depende do home.js): roda também nas telas de login/cadastro.
+ * Vídeo só inicia com áudio após clique do usuário (sem autoplay mudo).
  */
 (function () {
   'use strict';
@@ -37,7 +37,14 @@
       nodes[i].hidden = !visible;
     }
     var hint = modal.querySelector('[data-wl-video-hint]');
-    if (hint) hint.hidden = visible;
+    if (hint) {
+      if (visible) {
+        hint.hidden = true;
+      } else {
+        hint.hidden = false;
+        hint.textContent = 'Toque no play para começar. Assista até o final para continuar.';
+      }
+    }
   }
 
   function unlockVideo(modal) {
@@ -46,6 +53,37 @@
     modal.classList.remove('is-video-locked');
     markVideoSeen(modal);
     setVideoCloseVisible(modal, true);
+  }
+
+  function hidePlayOverlay(modal) {
+    var btn = modal.querySelector('[data-wl-video-play]');
+    if (btn) btn.hidden = true;
+  }
+
+  function showPlayOverlay(modal) {
+    var btn = modal.querySelector('[data-wl-video-play]');
+    if (btn) btn.hidden = false;
+  }
+
+  function startVideoWithSound(modal) {
+    var video = modal.querySelector('[data-wl-video]');
+    if (!video) return;
+
+    hidePlayOverlay(modal);
+    video.controls = true;
+    video.muted = false;
+    try {
+      video.currentTime = 0;
+    } catch (e) { /* ignore */ }
+
+    var p = video.play();
+    if (p && p.then) {
+      p.catch(function () {
+        // Se ainda falhar, mostra o overlay de novo.
+        showPlayOverlay(modal);
+        video.controls = false;
+      });
+    }
   }
 
   function setupVideoModal(modal) {
@@ -57,21 +95,14 @@
     modal.classList.toggle('is-video-locked', videoLocked);
     setVideoCloseVisible(modal, seen);
 
-    // Reinicia e tenta autoplay (muted primeiro para passar na política do browser; depois tenta com som).
+    // Sem autoplay: pausa, volta ao início, sem controles até o clique.
     try {
       video.pause();
       video.currentTime = 0;
     } catch (e) { /* ignore */ }
-
-    video.muted = true;
-    var playPromise = video.play();
-    if (playPromise && playPromise.then) {
-      playPromise.then(function () {
-        // Já está tocando mudo; usuário pode ligar o som nos controles.
-      }).catch(function () {
-        // Autoplay bloqueado: controles bastam.
-      });
-    }
+    video.muted = false;
+    video.controls = false;
+    showPlayOverlay(modal);
 
     video.onended = function () {
       unlockVideo(modal);
@@ -84,6 +115,7 @@
     try {
       video.pause();
       video.onended = null;
+      video.controls = false;
     } catch (e) { /* ignore */ }
   }
 
@@ -130,6 +162,14 @@
   document.addEventListener('click', function (e) {
     if (!current || !e.target.closest) return;
     var el;
+
+    // Play do vídeo (com áudio, do início)
+    if ((el = e.target.closest('[data-wl-video-play]')) && current.contains(el)) {
+      e.preventDefault();
+      startVideoWithSound(current);
+      return;
+    }
+
     if ((el = e.target.closest('[data-wl-close]')) && current.contains(el)) {
       if (videoLocked) {
         e.preventDefault();
