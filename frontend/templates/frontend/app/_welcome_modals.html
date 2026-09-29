@@ -1,9 +1,32 @@
 {% load static %}
-{# Modais exibidos a cada carregamento completo da área logada: "Bem-vindo" e, ao fechar, o banner "Compartilhe e ganhe". #}
+{# Modais ao carregar a área logada: vídeo (1º) e depois "Bem-vindo". #}
 {% with check='<span class="wl-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>' close='<button type="button" class="wl-close" data-wl-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>' %}
 
+<!-- Vídeo (primeiro) — na 1ª vez exige assistir até o fim -->
+<div class="wl-overlay" id="videoModal" data-autoshow="1" data-wl-video-once="nt_saque_video_seen"
+     role="dialog" aria-modal="true" aria-labelledby="videoModalTitle" hidden>
+  <div class="wl-backdrop" data-wl-close></div>
+  <div class="wl-video-card" tabindex="-1">
+    <button type="button" class="wl-close wl-video-close" data-wl-close aria-label="Fechar" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+    <h2 id="videoModalTitle" class="wl-video-title">Assista ao vídeo</h2>
+    <p class="wl-video-hint" data-wl-video-hint>Assista até o final para continuar.</p>
+    <div class="wl-video-wrap">
+      <video class="wl-video"
+             src="{% static 'frontend/video/saque.mp4' %}"
+             controls
+             playsinline
+             preload="auto"
+             controlslist="nodownload"
+             data-wl-video></video>
+    </div>
+    <button type="button" class="wl-primary wl-video-done" data-wl-close hidden>Continuar</button>
+  </div>
+</div>
+
 <!-- Bem-vindo -->
-<div class="wl-overlay" id="welcomeModal" data-autoshow="1" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle" hidden>
+<div class="wl-overlay" id="welcomeModal" data-autoshow="2" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle" hidden>
   <div class="wl-backdrop" data-wl-close></div>
   <div class="wl-card" tabindex="-1">
     <div class="wl-top">
@@ -21,16 +44,6 @@
       <button type="button" class="wl-primary" data-wl-close>Explorar agora</button>
       {% include "frontend/_welcome_parts.html" with part="community" %}
     </div>
-  </div>
-</div>
-
-<!-- Compartilhe e ganhe (banner da campanha) -->
-<div class="wl-overlay" id="shareModal" data-autoshow="2" role="dialog" aria-modal="true" aria-label="Campanha Compartilhe e Ganhe" hidden>
-  <div class="wl-backdrop" data-wl-close></div>
-  <div class="wl-banner" tabindex="-1">
-    <button type="button" class="wl-close wl-banner-close" data-wl-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-    <img src="{% static 'frontend/img/banner-compartilhe-ganhe.jpg' %}" width="900" height="1342"
-         alt="Campanha Compartilhe e Ganhe: bônus de R$ 2,50 para seus novos investimentos. Publique seus resultados em uma rede social com a data do dia, usando as hashtags #plataformanewtractors e #newtractors, e envie para um administrador para validar a recompensa.">
   </div>
 </div>
 {% endwith %}
