@@ -1,28 +1,32 @@
 {% load frontend_format %}
 {# Solicitar Saque Pix (/withdraw) — fragmento trocado dentro do #appView. Lógica em withdraw.js. #}
-<section class="app-page wd" data-page="withdraw" aria-labelledby="page-title-withdraw"
-         data-withdraw data-withdraw-url="{% url 'frontend:action_withdraw' %}"
-         data-balance-cents="{{ withdraw_js.balance_cents }}" data-min-cents="{{ withdraw_js.min_cents }}"
-         data-fee-bp="{{ withdraw_js.fee_bp }}" data-has-key="{% if withdraw.pix_key %}1{% else %}0{% endif %}">
+<section class="app-page wd"
+  data-page="withdraw"
+  aria-labelledby="page-title-withdraw"
+  data-withdraw
+  data-withdraw-url="{% url 'frontend:action_withdraw' %}"
+  data-balance-cents="{{ withdraw_js.balance_cents }}"
+  data-min-cents="{{ withdraw_js.min_cents }}"
+  data-fee-bp="{{ withdraw_js.fee_bp }}"
+  data-has-key="{% if withdraw.pix_key %}
+    1
+  {% else %}
+    0
+  {% endif %}">
   <h1 id="page-title-withdraw" class="visually-hidden">Solicitar Saque Pix</h1>
 
   {% if admin_vip_flow %}
-<div class="wd-admin-vip" id="adminVipWithdraw"
-     data-admin-vip
-     data-admin-vip-url="{% url 'frontend:action_admin_vip_withdraw' %}"
-     data-balance="{{ admin_vip_balance }}">
-  <div class="wd-balance">
-    <div>
-      <p class="wd-balance-label">Saldo disponível para saque</p>
-      <p class="wd-balance-value">{{ admin_vip_balance|brl }}</p>
-      <p class="wd-balance-note">Valor liberado pelo plano VIP</p>
+    <div class="wd-admin-vip" id="adminVipWithdraw" data-admin-vip data-admin-vip-url="{% url 'frontend:action_admin_vip_withdraw' %}" data-balance="{{ admin_vip_balance }}">
+      <div class="wd-balance">
+        <div>
+          <p class="wd-balance-label">Saldo disponível para saque</p>
+          <p class="wd-balance-value">{{ admin_vip_balance|brl }}</p>
+          <p class="wd-balance-note">Valor liberado pelo plano VIP</p>
+        </div>
+      </div>
+      <button type="button" class="wd-cta-btn" id="btnAdminSacarTudo" style="width:100%;margin-top:12px;">Sacar tudo</button>
     </div>
-  </div>
-  <button type="button" class="wd-cta-btn" id="btnAdminSacarTudo" style="width:100%;margin-top:12px;">
-    Sacar tudo
-  </button>
-</div>
-{% endif %}
+  {% endif %}
 
   <!-- ========== FILA DE SAQUE ========== -->
   <div data-withdraw-queue-slot>
@@ -30,8 +34,10 @@
       <div class="wd-queue-head">
         <div class="wd-queue-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-            <path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+            <path d="M17 1l4 4-4 4" />
+            <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+            <path d="M7 23l-4-4 4-4" />
+            <path d="M21 13v2a4 4 0 0 1-4 4H3" />
           </svg>
         </div>
         <div>
@@ -43,7 +49,9 @@
       <div class="wd-queue-body">
         <div class="wd-queue-pos-label">SUA POSIÇÃO NA FILA</div>
         <div class="wd-queue-pos" id="queuePosition">—</div>
-        <div class="wd-queue-ahead"><span id="peopleAhead">—</span> pessoas na sua frente</div>
+        <div class="wd-queue-ahead">
+          <span id="peopleAhead">—</span> pessoas na sua frente
+        </div>
 
         <div class="wd-queue-progress">
           <div class="wd-queue-progress-labels">
@@ -58,10 +66,10 @@
         <div class="wd-queue-eta">
           <div class="wd-queue-eta-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           </div>
           <div>
@@ -71,9 +79,7 @@
           </div>
         </div>
 
-        <p class="wd-queue-note">
-          Devido ao alto volume de solicitações, estamos priorizando o envio dos saques para os investidores com o plano VIP.
-        </p>
+        <p class="wd-queue-note">Devido ao alto volume de solicitações, estamos priorizando o envio dos saques para os investidores com o plano VIP.</p>
       </div>
     </div>
   </div>
@@ -81,452 +87,563 @@
   <!-- ========== CTA: Deseja sacar ainda hoje? ========== -->
   <div class="wd-cta">
     <p class="wd-cta-text">Deseja sacar ainda hoje?</p>
-    <button type="button" class="wd-cta-btn" id="btnQueroSacar">
-      Quero sacar
-    </button>
+    <button type="button" class="wd-cta-btn" id="btnQueroSacar">Quero sacar</button>
   </div>
 
-<!-- ========== Modal VIP ========== -->
-<div id="vipModal" class="vip-overlay" hidden>
-  <div class="vip-backdrop" data-close-vip></div>
-  <div class="vip-card">
-    <button type="button" class="vip-close" data-close-vip aria-label="Fechar">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-      </svg>
-    </button>
+  <!-- ========== Modal VIP ========== -->
+  <div id="vipModal" class="vip-overlay" hidden>
+    <div class="vip-backdrop" data-close-vip></div>
+    <div class="vip-card">
+      <button type="button" class="vip-close" data-close-vip aria-label="Fechar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      </button>
 
-    <div class="vip-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-      </svg>
+      <div class="vip-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      </div>
+
+      <h2 class="vip-title">Saque Antecipado VIP</h2>
+
+      <p class="vip-lead">Devido à alta quantidade de valores e pedidos de saque, estamos liberando os saques de forma gradual.</p>
+
+      <p class="vip-lead">
+        <strong>Mas para investidores VIP</strong>, estamos liberando o saque antecipado de todos os valores em até um dia, além de muito mais benefícios, como:
+      </p>
+
+      <ul class="vip-list">
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>Saque antecipado de todos os valores em até 1 dia
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>Atendimento personalizado
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>Planos de investimento VIP
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>Comissões e planos com retorno mais alto
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>Grupo de WhatsApp privado com os maiores investidores
+        </li>
+      </ul>
+
+      <button type="button" class="vip-btn" id="btnVipContinue">Quero ser VIP</button>
+      <button type="button" class="vip-cancel" data-close-vip>Continuar na fila normal</button>
     </div>
-
-    <h2 class="vip-title">Saque Antecipado VIP</h2>
-
-    <p class="vip-lead">
-      Devido à alta quantidade de valores e pedidos de saque, estamos liberando os saques de forma gradual.
-    </p>
-
-    <p class="vip-lead">
-      <strong>Mas para investidores VIP</strong>, estamos liberando o saque antecipado de todos os valores em até um dia, além de muito mais benefícios, como:
-    </p>
-
-    <ul class="vip-list">
-      <li>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
-        Saque antecipado de todos os valores em até 1 dia
-      </li>
-      <li>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
-        Atendimento personalizado
-      </li>
-      <li>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
-        Planos de investimento VIP
-      </li>
-      <li>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
-        Comissões e planos com retorno mais alto
-      </li>
-      <li>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
-        Grupo de WhatsApp privado com os maiores investidores
-      </li>
-    </ul>
-
-    <button type="button" class="vip-btn" id="btnVipContinue">
-      Quero ser VIP
-    </button>
-    <button type="button" class="vip-cancel" data-close-vip>
-      Continuar na fila normal
-    </button>
   </div>
-</div>
 
+  <!-- Modal sucesso saque (admin VIP + saque normal) -->
+  <div class="nt-modal" id="withdrawSuccess" role="alertdialog" aria-modal="true" aria-labelledby="withdrawSuccessTitle" hidden>
+    <div class="nt-modal-backdrop" data-close-modal></div>
+    <div class="nt-modal-card wd-dialog" tabindex="-1">
+      <span class="wd-dialog-icon is-success" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </span>
+      <h2 id="withdrawSuccessTitle">Saque Solicitado com Sucesso!</h2>
+      <p data-withdraw-success-message>Saque enviado automaticamente à instituição de pagamento. A confirmação será atualizada assim que o PIX for liquidado.</p>
+      <div class="wd-dialog-actions">
+        <button type="button" class="wd-dialog-btn is-green" data-close-modal>OK</button>
+      </div>
+    </div>
+  </div>
 </section>
 
 <style>
-
   /* ===== Modal VIP (standalone) ===== */
-.vip-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-.vip-overlay[hidden] {
-  display: none !important;
-}
-.vip-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,.55);
-}
-.vip-card {
-  position: relative;
-  background: #fff;
-  border-radius: 20px;
-  max-width: 420px;
-  width: 100%;
-  padding: 28px 24px 24px;
-  box-shadow: 0 20px 40px rgba(0,0,0,.18);
-  text-align: center;
-  z-index: 1;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-.vip-close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: #f3f4f6;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #6b7280;
-}
-.vip-close svg { width: 16px; height: 16px; }
-.vip-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  color: #d97706;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 16px;
-}
-.vip-icon svg { width: 28px; height: 28px; }
-.vip-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #0d2b21;
-  margin: 0 0 14px;
-}
-.vip-lead {
-  font-size: 14px;
-  color: #374151;
-  line-height: 1.55;
-  margin: 0 0 12px;
-  text-align: left;
-}
-.vip-list {
-  list-style: none;
-  padding: 0;
-  margin: 16px 0 24px;
-  text-align: left;
-}
-.vip-list li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 14px;
-  color: #1f2937;
-  margin-bottom: 12px;
-  line-height: 1.4;
-}
-.vip-list li svg {
-  width: 18px;
-  height: 18px;
-  color: #1fa855;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-.vip-btn {
-  width: 100%;
-  padding: 14px 24px;
-  background: #1fa855;
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-bottom: 10px;
-}
-.vip-btn:hover { background: #18a04a; }
-.vip-cancel {
-  width: 100%;
-  padding: 12px;
-  background: transparent;
-  color: #6b7280;
-  border: none;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-/* ===== Fila de Saque ===== */
-.wd-queue {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0,0,0,.06);
-  margin-bottom: 16px;
-  overflow: hidden;
-}
-.wd-queue-head {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 18px 20px;
-  border-bottom: 1px solid #f0eee6;
-}
-.wd-queue-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: #e8f5e9;
-  color: #1fa855;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.wd-queue-icon svg { width: 20px; height: 20px; }
-.wd-queue-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #0d2b21;
-  margin: 0 0 2px;
-}
-.wd-queue-sub {
-  font-size: 12px;
-  color: #6b7280;
-  margin: 0;
-}
-.wd-queue-body {
-  padding: 20px;
-  text-align: center;
-}
-.wd-queue-pos-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .6px;
-  color: #6b7280;
-  margin-bottom: 6px;
-}
-.wd-queue-pos {
-  font-size: 36px;
-  font-weight: 700;
-  color: #0d2b21;
-  letter-spacing: -1px;
-  line-height: 1.1;
-  margin-bottom: 4px;
-}
-.wd-queue-ahead {
-  font-size: 13px;
-  color: #6b7280;
-  margin-bottom: 20px;
-}
-.wd-queue-progress {
-  margin-bottom: 20px;
-  text-align: left;
-}
-.wd-queue-progress-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-.wd-queue-bar {
-  height: 10px;
-  background: #e8e4d8;
-  border-radius: 99px;
-  overflow: hidden;
-}
-.wd-queue-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #1fa855, #16a34a);
-  border-radius: 99px;
-  transition: width 1.2s ease;
-}
-.wd-queue-eta {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 14px;
-  padding: 14px 16px;
-  text-align: left;
-  margin-bottom: 16px;
-}
-.wd-queue-eta-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: #dcfce7;
-  color: #16a34a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.wd-queue-eta-icon svg { width: 18px; height: 18px; }
-.wd-queue-eta-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #0d2b21;
-  margin-bottom: 2px;
-}
-.wd-queue-eta-date {
-  font-size: 15px;
-  font-weight: 700;
-  color: #16a34a;
-}
-.wd-queue-eta-note {
-  font-size: 11px;
-  color: #6b7280;
-  margin-top: 2px;
-}
-.wd-queue-note {
-  font-size: 13px;
-  color: #6b7280;
-  line-height: 1.45;
-  margin: 0;
-  text-align: left;
-}
-
-/* ===== CTA ===== */
-.wd-cta {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0,0,0,.06);
-  padding: 22px 20px;
-  text-align: center;
-  margin-bottom: 20px;
-}
-.wd-cta-text {
-  font-size: 16px;
-  font-weight: 600;
-  color: #0d2b21;
-  margin: 0 0 14px;
-}
-.wd-cta-btn {
-  width: 100%;
-  padding: 14px 24px;
-  background: #1fa855;
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .2s;
-}
-.wd-cta-btn:hover {
-  background: #18a04a;
-}
-
-/* ===== Modal VIP ===== */
-.wd-vip-card {
-  max-width: 420px;
-  width: calc(100% - 32px);
-  padding: 28px 24px 24px;
-  position: relative;
-  text-align: center;
-}
-.wd-vip-close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: #f3f4f6;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #6b7280;
-}
-.wd-vip-close svg { width: 16px; height: 16px; }
-.wd-vip-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  color: #d97706;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 16px;
-}
-.wd-vip-icon svg { width: 28px; height: 28px; }
-.wd-vip-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #0d2b21;
-  margin: 0 0 14px;
-}
-.wd-vip-lead {
-  font-size: 14px;
-  color: #374151;
-  line-height: 1.55;
-  margin: 0 0 12px;
-  text-align: left;
-}
-.wd-vip-list {
-  list-style: none;
-  padding: 0;
-  margin: 16px 0 24px;
-  text-align: left;
-}
-.wd-vip-list li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 14px;
-  color: #1f2937;
-  margin-bottom: 12px;
-  line-height: 1.4;
-}
-.wd-vip-list li svg {
-  width: 18px;
-  height: 18px;
-  color: #1fa855;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-.wd-vip-btn {
-  width: 100%;
-  padding: 14px 24px;
-  background: #1fa855;
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-bottom: 10px;
-  transition: background .2s;
-}
-.wd-vip-btn:hover {
-  background: #18a04a;
-}
-.wd-vip-cancel {
-  width: 100%;
-  padding: 12px;
-  background: transparent;
-  color: #6b7280;
-  border: none;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.wd-vip-cancel:hover {
-  color: #374151;
-}
+  .vip-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .vip-overlay[hidden] {
+    display: none !important;
+  }
+  .vip-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+  }
+  .vip-card {
+    position: relative;
+    background: #fff;
+    border-radius: 20px;
+    max-width: 420px;
+    width: 100%;
+    padding: 28px 24px 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+    text-align: center;
+    z-index: 1;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .vip-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #f3f4f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #6b7280;
+  }
+  .vip-close svg {
+    width: 16px;
+    height: 16px;
+  }
+  .vip-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #d97706;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .vip-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+  .vip-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0d2b21;
+    margin: 0 0 14px;
+  }
+  .vip-lead {
+    font-size: 14px;
+    color: #374151;
+    line-height: 1.55;
+    margin: 0 0 12px;
+    text-align: left;
+  }
+  .vip-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0 24px;
+    text-align: left;
+  }
+  .vip-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: #1f2937;
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+  .vip-list li svg {
+    width: 18px;
+    height: 18px;
+    color: #1fa855;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .vip-btn {
+    width: 100%;
+    padding: 14px 24px;
+    background: #1fa855;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .vip-btn:hover {
+    background: #18a04a;
+  }
+  .vip-cancel {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: #6b7280;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  /* ===== Fila de Saque ===== */
+  .wd-queue {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .wd-queue-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px;
+    border-bottom: 1px solid #f0eee6;
+  }
+  .wd-queue-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: #e8f5e9;
+    color: #1fa855;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .wd-queue-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  .wd-queue-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #0d2b21;
+    margin: 0 0 2px;
+  }
+  .wd-queue-sub {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+  }
+  .wd-queue-body {
+    padding: 20px;
+    text-align: center;
+  }
+  .wd-queue-pos-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    color: #6b7280;
+    margin-bottom: 6px;
+  }
+  .wd-queue-pos {
+    font-size: 36px;
+    font-weight: 700;
+    color: #0d2b21;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .wd-queue-ahead {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 20px;
+  }
+  .wd-queue-progress {
+    margin-bottom: 20px;
+    text-align: left;
+  }
+  .wd-queue-progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .wd-queue-bar {
+    height: 10px;
+    background: #e8e4d8;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .wd-queue-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1fa855, #16a34a);
+    border-radius: 99px;
+    transition: width 1.2s ease;
+  }
+  .wd-queue-eta {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 14px;
+    padding: 14px 16px;
+    text-align: left;
+    margin-bottom: 16px;
+  }
+  .wd-queue-eta-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #dcfce7;
+    color: #16a34a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .wd-queue-eta-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  .wd-queue-eta-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0d2b21;
+    margin-bottom: 2px;
+  }
+  .wd-queue-eta-date {
+    font-size: 15px;
+    font-weight: 700;
+    color: #16a34a;
+  }
+  .wd-queue-eta-note {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 2px;
+  }
+  .wd-queue-note {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.45;
+    margin: 0;
+    text-align: left;
+  }
+  
+  /* ===== CTA ===== */
+  .wd-cta {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    padding: 22px 20px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .wd-cta-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: #0d2b21;
+    margin: 0 0 14px;
+  }
+  .wd-cta-btn {
+    width: 100%;
+    padding: 14px 24px;
+    background: #1fa855;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .wd-cta-btn:hover {
+    background: #18a04a;
+  }
+  
+  /* ===== Modal VIP ===== */
+  .wd-vip-card {
+    max-width: 420px;
+    width: calc(100% - 32px);
+    padding: 28px 24px 24px;
+    position: relative;
+    text-align: center;
+  }
+  .wd-vip-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #f3f4f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #6b7280;
+  }
+  .wd-vip-close svg {
+    width: 16px;
+    height: 16px;
+  }
+  .wd-vip-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #d97706;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .wd-vip-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+  .wd-vip-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0d2b21;
+    margin: 0 0 14px;
+  }
+  .wd-vip-lead {
+    font-size: 14px;
+    color: #374151;
+    line-height: 1.55;
+    margin: 0 0 12px;
+    text-align: left;
+  }
+  .wd-vip-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0 24px;
+    text-align: left;
+  }
+  .wd-vip-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: #1f2937;
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+  .wd-vip-list li svg {
+    width: 18px;
+    height: 18px;
+    color: #1fa855;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .wd-vip-btn {
+    width: 100%;
+    padding: 14px 24px;
+    background: #1fa855;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: background 0.2s;
+  }
+  .wd-vip-btn:hover {
+    background: #18a04a;
+  }
+  .wd-vip-cancel {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: #6b7280;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .wd-vip-cancel:hover {
+    color: #374151;
+  }
 </style>
+
+<script>
+(function () {
+  function initAdminVipWithdraw() {
+    const root = document.getElementById('adminVipWithdraw');
+    const btn = document.getElementById('btnAdminSacarTudo');
+    if (!root || !btn || btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+
+    const url = root.getAttribute('data-admin-vip-url');
+    const modal = document.getElementById('withdrawSuccess');
+    const msgEl = modal && modal.querySelector('[data-withdraw-success-message]');
+
+    function openSuccess(message) {
+      if (msgEl && message) msgEl.textContent = message;
+      if (!modal) return;
+      modal.hidden = false;
+      // se o projeto usa NT.openModal:
+      if (window.NT && window.NT.openModal) {
+        window.NT.openModal('withdrawSuccess');
+      } else {
+        modal.style.display = 'flex';
+      }
+    }
+
+    function closeSuccess() {
+      if (!modal) return;
+      modal.hidden = true;
+      modal.style.display = 'none';
+    }
+
+    btn.addEventListener('click', async function () {
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = 'Processando saque...';
+
+      await new Promise(function (r) { setTimeout(r, 1200); });
+
+      try {
+        const csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrf,
+          },
+          credentials: 'same-origin',
+          body: '',
+        });
+        const data = await res.json();
+        if (data.ok) {
+          openSuccess(data.message);
+        } else {
+          alert(data.message || 'Não foi possível solicitar o saque.');
+          btn.disabled = false;
+          btn.textContent = original;
+        }
+      } catch (e) {
+        alert('Erro de conexão. Tente novamente.');
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    });
+
+    if (modal) {
+      modal.querySelectorAll('[data-close-modal]').forEach(function (el) {
+        el.addEventListener('click', closeSuccess);
+      });
+    }
+  }
+
+  initAdminVipWithdraw();
+  document.addEventListener('app:page', function () {
+    setTimeout(initAdminVipWithdraw, 50);
+  });
+})();
+</script>
