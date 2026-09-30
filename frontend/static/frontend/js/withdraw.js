@@ -30,6 +30,9 @@
 
   /** Recalcula líquido, rótulo e estado do botão. Retorna {cents, valid}. */
   function update(page) {
+    // Tela sem o formulário de valor (versão com a fila e o "Quero sacar"): nada a calcular.
+    // Sem isto, a carga direta de /withdraw quebrava aqui e a fila ficava em "—".
+    if (!page.querySelector('[data-withdraw-amount]')) return { cents: 0, valid: false };
     var cents = amountCents(page);
     var balance = num(page, 'data-balance-cents');
     var min = num(page, 'data-min-cents');
@@ -396,7 +399,9 @@
     if (!data || typeof data.startPos !== 'number' || typeof data.startAt !== 'number') {
       var startPos = Math.floor(Math.random() * (QUEUE_INITIAL_MAX - QUEUE_INITIAL_MIN + 1)) + QUEUE_INITIAL_MIN;
       data = { startPos: startPos, startAt: now };
-      localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(data));
+      try {
+        localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(data));
+      } catch (e) { /* armazenamento bloqueado: mostra a posição mesmo assim (recomeça a cada carga) */ }
     }
 
     var elapsed = now - data.startAt;
