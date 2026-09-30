@@ -51,6 +51,7 @@ urlpatterns = [
     path("acoes/roleta", views.RouletteActionView.as_view(), name="action_roulette"),
     path("acoes/saque", views.WithdrawActionView.as_view(), name="action_withdraw"),
     path("acoes/saque/fila", views.WithdrawQueueView.as_view(), name="action_withdraw_queue"),
+    path("acoes/comunidade", views.CommunityOpenedActionView.as_view(), name="action_community_opened"),
     path("acoes/cpf", views.CpfActionView.as_view(), name="action_cpf"),
     path("acoes/extrato", views.StatementView.as_view(), name="statement"),
     path("acoes/notificacoes", views.NotificationsView.as_view(), name="notifications"),

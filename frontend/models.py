@@ -94,6 +94,8 @@ class UserProfile(models.Model):
     vip_since = models.DateTimeField(null=True, blank=True)
     invest_balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0"))
     withdraw_balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0"))
+    # 1ª vez que abriu um link da comunidade pela etapa do saque (não prova que entrou no grupo).
+    community_opened_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

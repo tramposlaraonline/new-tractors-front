@@ -47,6 +47,59 @@
   </div>
 </div>
 
+{% if community_gate %}
+<!-- Etapa "entre na comunidade" do /withdraw (welcome.js abre só nessa tela, depois do vídeo visto).
+     Não dá para saber se entrou no grupo: libera quando abre um link e volta para o app. -->
+<div class="wl-overlay wl-overlay--video" id="communityGate" data-wl-gate
+     data-wl-gate-url="{{ community_gate.url }}" data-wl-gate-key="nt_community_opened_{{ request.user.pk }}"
+     data-wl-gate-video-key="nt_saque_video_seen"
+     role="dialog" aria-modal="true" aria-labelledby="communityGateTitle" aria-describedby="communityGateStatus" hidden>
+  <div class="wl-backdrop" data-wl-close></div>
+  <div class="wl-vcard wl-gcard" tabindex="-1" data-state="locked">
+    <div class="wl-vhead">
+      <div class="wl-vhead-text">
+        <h2 id="communityGateTitle" class="wl-vtitle" data-wl-gate-title>Falta um passo para sacar</h2>
+        <p id="communityGateStatus" class="wl-vsub" data-wl-gate-status aria-live="polite">Entre na comunidade New Tractors para liberar o saque.</p>
+      </div>
+      <button type="button" class="wl-close wl-vclose" data-wl-close aria-label="Fechar" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <ol class="wl-gsteps">
+      <li class="is-done">
+        <span class="wl-gstep-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <span>Assistir o vídeo<span class="visually-hidden"> (concluído)</span></span>
+      </li>
+      <li class="is-current" data-wl-gate-step>
+        <span class="wl-gstep-mark" aria-hidden="true"><span class="wl-gstep-num">2</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <span>Entrar na comunidade<small data-wl-gate-hint>Toque em um grupo, entre e volte para cá.</small></span>
+      </li>
+    </ol>
+    <div class="wl-community wl-gchannels">
+      {% if community.community_telegram %}
+        <a href="{{ community.community_telegram }}" target="_blank" rel="noopener noreferrer" class="wl-btn-tele" data-wl-gate-link="telegram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>
+          Telegram
+        </a>
+      {% endif %}
+      {% if community.community_whatsapp %}
+        <a href="{{ community.community_whatsapp }}" target="_blank" rel="noopener noreferrer" class="wl-btn-whats" data-wl-gate-link="whatsapp">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+          WhatsApp
+        </a>
+      {% endif %}
+    </div>
+    <div class="wl-vfoot">
+      <button type="button" class="wl-vcta" data-wl-gate-continue aria-disabled="true">
+        <svg class="wl-vcta-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <span data-wl-gate-cta-label>Entre na comunidade para liberar</span>
+      </button>
+      <a href="{% url 'frontend:home' %}" class="wl-gleave" data-spa-link data-tab="home" data-wl-gate-leave>Agora não, voltar ao início</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Bem-vindo -->
 <div class="wl-overlay" id="welcomeModal" data-autoshow="2" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle" hidden>
   <div class="wl-backdrop" data-wl-close></div>

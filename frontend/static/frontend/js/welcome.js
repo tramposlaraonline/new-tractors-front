@@ -5,6 +5,8 @@
  * o fechamento; o botão de baixo enche conforme o progresso. Depois de visto, pode pular a qualquer momento.
  * Se o vídeo não carregar, libera a saída sem marcar como visto (volta a aparecer no próximo carregamento).
  * Vídeo só inicia com áudio após clique do usuário (sem autoplay mudo).
+ * Etapa da comunidade (#communityGate, só no /withdraw e depois do vídeo visto): trava até o usuário abrir
+ * um link da comunidade e voltar; grava na conta (acoes/comunidade) e não aparece mais. Trava só visual.
  */
 (function () {
   'use strict';
@@ -13,7 +15,6 @@
     .sort(function (a, b) { return (+a.getAttribute('data-autoshow')) - (+b.getAttribute('data-autoshow')); });
   var current = null;
   var lastFocus = null;
-  var videoLocked = false;
 
   function storageGet(key) {
     try { return localStorage.getItem(key); } catch (e) { return null; }
@@ -21,6 +22,19 @@
 
   function storageSet(key, value) {
     try { localStorage.setItem(key, value); } catch (e) { /* private mode */ }
+  }
+
+  // Reinicia uma animação de CSS (a classe precisa sair e voltar).
+  function restart(el, cls) {
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+  }
+
+  // Modal travado (vídeo obrigatório / etapa da comunidade): Esc, clique fora e X não fecham, só balançam.
+  function setLocked(modal, locked) {
+    modal._wlLocked = locked;
+    modal.classList.toggle('is-video-locked', locked);
   }
 
   function formatClock(seconds) {
@@ -56,12 +70,6 @@
       return seenKey ? storageGet(seenKey) === '1' : true;
     }
 
-    function restart(el, cls) {
-      el.classList.remove(cls);
-      void el.offsetWidth;
-      el.classList.add(cls);
-    }
-
     function updateProgress() {
       var d = video.duration || 0;
       var p = d ? Math.min(1, maxWatched / d) : 0;
@@ -72,11 +80,10 @@
 
     function setState(next) {
       state = next;
-      videoLocked = next === 'locked';
+      setLocked(modal, next === 'locked');
       card.setAttribute('data-state', next);
-      modal.classList.toggle('is-video-locked', videoLocked);
-      closeBtn.hidden = videoLocked;
-      cta.setAttribute('aria-disabled', videoLocked ? 'true' : 'false');
+      closeBtn.hidden = next === 'locked';
+      cta.setAttribute('aria-disabled', next === 'locked' ? 'true' : 'false');
 
       if (next === 'locked') {
         status.textContent = 'Assista até o fim para continuar.';
@@ -125,6 +132,7 @@
       if (state === 'locked') {
         if (seenKey) storageSet(seenKey, '1');
         setState('done');
+        document.dispatchEvent(new CustomEvent('wl:video-seen'));
       }
       showPlay('Assistir de novo', formatDuration(video.duration), true);
     });
@@ -206,10 +214,124 @@
     };
   }
 
-  function videoCtl(modal) {
-    if (!modal || !modal.hasAttribute('data-wl-video-once')) return null;
-    if (!modal._wlVideo) modal._wlVideo = createVideoController(modal);
-    return modal._wlVideo;
+  // Etapa "entre na comunidade" (/withdraw): locked | waiting (abriu um link) | confirm | done.
+  // Não dá para saber se entrou no grupo: libera quando abre um link e volta para o app
+  // (a página sai e volta ao primeiro plano). Se isso não for detectado, "Já entrei" aparece após 10s.
+  function createGateController(modal) {
+    var card = modal.querySelector('.wl-vcard');
+    var title = modal.querySelector('[data-wl-gate-title]');
+    var status = modal.querySelector('[data-wl-gate-status]');
+    var hint = modal.querySelector('[data-wl-gate-hint]');
+    var step = modal.querySelector('[data-wl-gate-step]');
+    var closeBtn = modal.querySelector('.wl-vclose');
+    var cta = modal.querySelector('[data-wl-gate-continue]');
+    var ctaLabel = modal.querySelector('[data-wl-gate-cta-label]');
+    var key = modal.getAttribute('data-wl-gate-key');
+    var url = modal.getAttribute('data-wl-gate-url');
+
+    var state = 'locked';
+    var wentAway = false;
+    var confirmTimer = null;
+    var saving = false;
+
+    var TEXT = {
+      locked: ['Entre na comunidade New Tractors para liberar o saque.', 'Toque em um grupo, entre e volte para cá.',
+               'Entre na comunidade para liberar'],
+      waiting: ['Entre no grupo e volte para esta tela.', 'Depois de entrar no grupo, volte para cá.',
+                'Aguardando você voltar…'],
+      confirm: ['Entre no grupo e volte para esta tela.', 'Depois de entrar no grupo, volte para cá.',
+                'Já entrei na comunidade'],
+      done: ['Pronto! Seu saque está liberado.', 'Você abriu a comunidade.', 'Ir para o saque']
+    };
+
+    function setState(next) {
+      state = next;
+      setLocked(modal, next !== 'done');
+      card.setAttribute('data-state', next);
+      closeBtn.hidden = next !== 'done';
+      cta.setAttribute('aria-disabled', next === 'confirm' || next === 'done' ? 'false' : 'true');
+      step.classList.toggle('is-done', next === 'done');
+      step.classList.toggle('is-current', next !== 'done');
+      title.textContent = next === 'done' ? 'Tudo certo para sacar' : 'Falta um passo para sacar';
+      status.textContent = TEXT[next][0];
+      hint.textContent = TEXT[next][1];
+      ctaLabel.textContent = TEXT[next][2];
+      if (next === 'done') restart(cta, 'is-ready');
+    }
+
+    // Marca local primeiro (não pede de novo neste navegador mesmo se o POST falhar) e grava na conta.
+    function save() {
+      storageSet(key, '1');
+      if (saving || !url || !window.NT || !window.NT.postAction) return;
+      saving = true;
+      window.NT.postAction(url).then(function (data) { if (!data.ok) saving = false; });
+    }
+
+    function complete() {
+      clearTimeout(confirmTimer);
+      save();
+      setState('done');
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (state !== 'waiting' && state !== 'confirm') return;
+      if (document.hidden) wentAway = true;
+      else if (wentAway) complete();
+    });
+
+    // Link aberto na mesma aba (navegador embutido de app) e "voltar" restaurou a página do cache.
+    window.addEventListener('pageshow', function (e) {
+      if (e.persisted && (state === 'waiting' || state === 'confirm')) complete();
+    });
+
+    return {
+      // Precisa da etapa? Quem já abriu um link neste navegador (e só o POST falhou) é regravado e liberado.
+      required: function () {
+        if (state === 'done') return false;
+        if (storageGet(key) === '1' || storageGet(key + ':clicked') === '1') {
+          save();
+          setState('done');
+          return false;
+        }
+        return true;
+      },
+
+      reset: function () {
+        if (state === 'locked') setState('locked');
+      },
+
+      linkClicked: function () {
+        if (state === 'done') return;
+        storageSet(key + ':clicked', '1'); // voltou recarregando a página: conta como aberto
+        wentAway = document.hidden;
+        setState('waiting');
+        clearTimeout(confirmTimer);
+        confirmTimer = setTimeout(function () {
+          if (state === 'waiting') setState('confirm');
+        }, 10000);
+      },
+
+      continueClicked: function () {
+        if (state === 'confirm') complete();
+        else if (state === 'done') close();
+        else restart(cta, 'is-nudge');
+      },
+
+      nudge: function () {
+        restart(cta, 'is-nudge');
+      },
+
+      teardown: function () {}
+    };
+  }
+
+  function ctlFor(modal) {
+    if (!modal) return null;
+    if (!modal._wlCtl) {
+      if (modal.hasAttribute('data-wl-video-once')) modal._wlCtl = createVideoController(modal);
+      else if (modal.hasAttribute('data-wl-gate')) modal._wlCtl = createGateController(modal);
+    }
+    return modal._wlCtl || null;
   }
 
   function open(modal) {
@@ -220,7 +342,7 @@
     modal.classList.add('is-open');
     document.documentElement.classList.add('wl-lock');
 
-    var ctl = videoCtl(modal);
+    var ctl = ctlFor(modal);
     if (ctl) ctl.reset();
 
     var card = modal.querySelector('.wl-card, .wl-banner, .wl-vcard');
@@ -231,22 +353,15 @@
     var modal = queue.shift();
     if (modal) { open(modal); return; }
     current = null;
-    videoLocked = false;
     document.documentElement.classList.remove('wl-lock');
     if (lastFocus && document.contains(lastFocus) && lastFocus.focus) lastFocus.focus({ preventScroll: true });
     lastFocus = null;
   }
 
-  function close() {
-    if (!current) return;
-    if (videoLocked) {
-      var locked = videoCtl(current);
-      if (locked) locked.nudge();
-      return;
-    }
+  function dismiss() {
     var modal = current;
     current = null;
-    var ctl = videoCtl(modal);
+    var ctl = ctlFor(modal);
     if (ctl) ctl.teardown();
     modal.classList.remove('is-open');
     modal.classList.remove('is-video-locked');
@@ -256,6 +371,23 @@
     }, 230);
   }
 
+  // Fechar pelo usuário: modal travado só balança o botão.
+  function close() {
+    if (!current) return;
+    if (current._wlLocked) {
+      var ctl = ctlFor(current);
+      if (ctl) ctl.nudge();
+      return;
+    }
+    dismiss();
+  }
+
+  function requestOpen(modal) {
+    if (!modal || modal === current || queue.indexOf(modal) !== -1) return;
+    if (current) { queue.unshift(modal); return; }
+    open(modal);
+  }
+
   document.addEventListener('click', function (e) {
     if (!current || !e.target.closest) return;
     var el;
@@ -263,12 +395,28 @@
     // Play do vídeo (com áudio)
     if ((el = e.target.closest('[data-wl-video-play]')) && current.contains(el)) {
       e.preventDefault();
-      videoCtl(current).start();
+      ctlFor(current).start();
+      return;
+    }
+
+    // Etapa da comunidade: o link abre normalmente (nova aba/app); só registramos o toque.
+    if ((el = e.target.closest('[data-wl-gate-link]')) && current.contains(el)) {
+      ctlFor(current).linkClicked();
+      return;
+    }
+    if ((el = e.target.closest('[data-wl-gate-continue]')) && current.contains(el)) {
+      e.preventDefault();
+      ctlFor(current).continueClicked();
+      return;
+    }
+    // "Agora não": sai da tela de saque (o app.js faz a navegação SPA); a etapa continua pendente.
+    if ((el = e.target.closest('[data-wl-gate-leave]')) && current.contains(el)) {
+      dismiss();
       return;
     }
 
     if ((el = e.target.closest('[data-wl-video-continue], [data-wl-close]')) && current.contains(el)) {
-      if (el.tagName !== 'A' || videoLocked) e.preventDefault();
+      if (el.tagName !== 'A' || current._wlLocked) e.preventDefault();
       close();
       return;
     }
@@ -297,16 +445,13 @@
   });
 
   document.addEventListener('wl:open', function (e) {
-    var modal = e.detail && document.getElementById(e.detail.id);
-    if (!modal || modal === current || queue.indexOf(modal) !== -1) return;
-    if (current) { queue.unshift(modal); return; }
-    open(modal);
+    requestOpen(e.detail && document.getElementById(e.detail.id));
   });
 
   document.addEventListener('keydown', function (e) {
     if (!current) return;
     if (e.key === 'Escape') {
-      if (videoLocked) e.preventDefault();
+      if (current._wlLocked) e.preventDefault();
       close();
       return;
     }
@@ -318,6 +463,42 @@
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
+
+  // ---- Etapa da comunidade no /withdraw (só existe na página se a conta ainda não abriu um link) ----
+  var gate = document.getElementById('communityGate');
+
+  function onWithdrawPage() {
+    return !!document.querySelector('[data-withdraw]');
+  }
+
+  function gateWanted() {
+    if (!gate || !onWithdrawPage()) return false;
+    if (storageGet(gate.getAttribute('data-wl-gate-video-key')) !== '1') return false;
+    return ctlFor(gate).required();
+  }
+
+  // Terminou o vídeo agora, já no /withdraw: a etapa abre logo depois dele.
+  document.addEventListener('wl:video-seen', function () {
+    if (gateWanted()) requestOpen(gate);
+  });
+
+  // Troca de aba pelo SPA (a carga inicial é tratada abaixo: o app.js dispara antes deste script).
+  document.addEventListener('app:page', function () {
+    if (!gate) return;
+    if (onWithdrawPage()) {
+      if (gateWanted()) requestOpen(gate);
+      return;
+    }
+    if (current === gate) dismiss();
+    var i = queue.indexOf(gate);
+    if (i !== -1) queue.splice(i, 1);
+  });
+
+  // Carga direta do /withdraw por quem já viu o vídeo: a etapa entra no lugar do vídeo.
+  if (gateWanted()) {
+    queue = queue.filter(function (m) { return !m.hasAttribute('data-wl-video-once'); });
+    queue.unshift(gate);
+  }
 
   next();
 })();

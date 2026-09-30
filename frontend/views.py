@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db import DatabaseError
 from django.contrib.auth import authenticate, get_user_model, login, password_validation
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import LoginView as DjangoLoginView, RedirectURLMixin, redirect_to_login
@@ -87,6 +88,24 @@ def channel_context():
     ch = get_channels()
     return {"support_url": ch["support_url"], "whatsapp_url": ch["support_whatsapp"],
             "telegram_url": ch["support_telegram"], "community": ch}
+
+
+def community_gate(user, channels):
+    """Etapa "entre na comunidade" do /withdraw: só existe se há link configurado e a conta ainda não abriu um.
+
+    A trava é só visual (o saque não é recusado no servidor); o welcome.js decide quando mostrar.
+    """
+    if not channels["has_community"]:
+        return None
+    try:
+        opened = (UserProfile.objects.filter(user=user)
+                  .values_list("community_opened_at", flat=True).first())
+    except DatabaseError:  # coluna ainda não migrada: sem etapa, não derruba a casca
+        logger.exception("Falha ao ler community_opened_at")
+        return None
+    if opened:
+        return None
+    return {"url": reverse("frontend:action_community_opened")}
 
 
 # Trava temporária de login e cadastro. Ligada por padrão: para liberar, FRONTEND_AUTH_LOCKED = False.
@@ -328,6 +347,7 @@ class AppPageView(LoginRequiredMixin, TemplateView):
         if not is_spa_request(self.request):
             # Cabeçalho e modais de boas-vindas só existem na casca; numa troca de aba já estão na página.
             context["header"] = {**user_display(self.request.user), **get_header_state(self.request.user)}
+            context["community_gate"] = community_gate(self.request.user, context["community"])
 
         return context
 
@@ -665,6 +685,30 @@ class WithdrawQueueView(HomeActionView):
 
     def perform(self, request):
         return 200, {"ok": True, "queue": withdraw_queue_json(get_withdraw_queue(request.user))}
+
+
+@method_decorator(never_cache, name="dispatch")
+class CommunityOpenedActionView(LoginRequiredMixin, View):
+    """Etapa da comunidade no /withdraw: o usuário abriu um link e voltou. Grava só a 1ª vez (idempotente).
+
+    Não prova que entrou no grupo (WhatsApp/Telegram não informam) e não trava o saque no servidor.
+    Fica fora do HomeActionView porque não mexe em saldo (não precisa devolver os saldos atualizados).
+    """
+
+    http_method_names = ["post"]
+
+    def handle_no_permission(self):
+        return JsonResponse({"ok": False, "message": "Sua sessão expirou. Entre novamente."}, status=401)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            UserProfile.objects.get_or_create(user=request.user)  # corrida de 2 pedidos: o Django refaz o get
+            UserProfile.objects.filter(user=request.user, community_opened_at__isnull=True).update(
+                community_opened_at=timezone.now())
+        except DatabaseError:
+            logger.exception("Falha ao gravar community_opened_at")
+            return JsonResponse({"ok": False, "message": GENERIC_ACTION_ERROR}, status=500)
+        return JsonResponse({"ok": True})
 class StaffWithdrawQueueView(UserPassesTestMixin, AppPageView):
     """Prévia do cartão da fila de saque (/painel/fila), só para o time (is_staff).
 

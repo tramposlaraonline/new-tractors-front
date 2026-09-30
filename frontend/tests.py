@@ -1682,6 +1682,88 @@ class ChannelsAndWelcomeTests(TestCase):
         self.set_channels(support_whatsapp="https://wa.me/1")
         self.assertRedirects(self.client.get(url), reverse("admin:frontend_communicationchannels_change", args=[1]))
 
+
+class CommunityGateTests(TestCase):
+    """Etapa "entre na comunidade" do /withdraw: vem na casca até a conta abrir um link; trava só visual."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.addCleanup(cache.clear)
+        self.user = get_user_model().objects.create_user(username="11987654321", password="x")
+        self.client.force_login(self.user)
+        self.action = reverse("frontend:action_community_opened")
+
+    def set_channels(self, **values):
+        from django.core.cache import cache
+        from .models import CommunicationChannels
+        obj = CommunicationChannels(**values)
+        obj.full_clean()
+        obj.save()
+        cache.clear()
+
+    def gate_html(self, url_name="frontend:home"):
+        html = self.client.get(reverse(url_name)).content.decode()
+        if 'id="communityGate"' not in html:
+            return None
+        return html[html.index('id="communityGate"'):]
+
+    def test_gate_is_in_the_shell_until_the_account_opens_a_community_link(self):
+        self.set_channels(community_telegram="https://t.me/+CANAL")
+        gate = self.gate_html()
+        self.assertIsNotNone(gate)
+        self.assertIn(f'data-wl-gate-url="{self.action}"', gate)
+        self.assertIn(f'data-wl-gate-key="nt_community_opened_{self.user.pk}"', gate)
+        self.assertIn('href="https://t.me/+CANAL" target="_blank" rel="noopener noreferrer" class="wl-btn-tele" '
+                      'data-wl-gate-link="telegram"', gate)
+        self.assertNotIn('data-wl-gate-link="whatsapp"', gate)
+
+    def test_gate_offers_whatsapp_when_configured(self):
+        self.set_channels(community_whatsapp="https://chat.whatsapp.com/GRUPO")
+        gate = self.gate_html()
+        self.assertIn('href="https://chat.whatsapp.com/GRUPO"', gate)
+        self.assertNotIn('data-wl-gate-link="telegram"', gate)
+
+    def test_no_gate_without_community_links(self):
+        # Sem link no admin não há como cumprir a etapa: ninguém pode ficar preso.
+        self.assertIsNone(self.gate_html())
+
+    def test_gate_is_not_in_the_spa_fragment(self):
+        self.set_channels(community_telegram="https://t.me/+CANAL")
+        spa = self.client.get(reverse("frontend:home"), **SPA).json()["html"]
+        self.assertNotIn("communityGate", spa)
+
+    def test_opening_records_only_the_first_time_and_removes_the_gate(self):
+        from .models import UserProfile
+        self.set_channels(community_telegram="https://t.me/+CANAL")
+        res = self.client.post(self.action, **JSON)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), {"ok": True})
+        first = UserProfile.objects.get(user=self.user).community_opened_at
+        self.assertIsNotNone(first)
+
+        self.assertTrue(self.client.post(self.action, **JSON).json()["ok"])
+        self.assertEqual(UserProfile.objects.get(user=self.user).community_opened_at, first)
+        self.assertIsNone(self.gate_html())
+
+    def test_opening_keeps_existing_profile_data(self):
+        from decimal import Decimal
+        from .models import UserProfile
+        UserProfile.objects.create(user=self.user, cpf="12345678909", withdraw_balance=Decimal("50.00"))
+        self.client.post(self.action, **JSON)
+        profile = UserProfile.objects.get(user=self.user)
+        self.assertIsNotNone(profile.community_opened_at)
+        self.assertEqual((profile.cpf, profile.withdraw_balance), ("12345678909", Decimal("50.00")))
+
+    def test_action_is_post_only_with_login_and_csrf(self):
+        self.assertEqual(self.client.get(self.action).status_code, 405)
+        anonymous = Client().post(self.action, **JSON)
+        self.assertEqual(anonymous.status_code, 401)
+        self.assertFalse(anonymous.json()["ok"])
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.user)
+        self.assertEqual(csrf_client.post(self.action, **JSON).status_code, 403)
+
 # Bloqueio temporário: só o Início (e as ações dele) responde; o resto é fechado por padrão no servidor.
 HOME_ONLY_BLOCKED_PAGES = [("frontend:team", {}), ("frontend:deposit", {}),
                              ("frontend:deposit_payment", {"charge_id": "abc123"}), ("frontend:purchases", {}),
